@@ -80,10 +80,10 @@ class RouteCalculationScreen extends StatefulWidget {
 
 class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   final List<TextEditingController> _diameterControllers = List.generate(
-    12,
+    16,
     (_) => TextEditingController(),
   );
-  final List<double> _reductions = List.filled(12, 0);
+  final List<double> _reductions = List.filled(15, 0);
 
   double _parseInput(String value) {
     return double.tryParse(value.replaceAll(',', '.')) ?? 0;
@@ -91,18 +91,16 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
 
   void _calculateReductions() {
     try {
-      for (int i = 0; i < 12; i++) {
-        if (i == 0) continue; // Пропускаем заготовку
-
+      for (int i = 1; i < 16; i++) {
         final double prev = _parseInput(_diameterControllers[i - 1].text);
         final double next = _parseInput(_diameterControllers[i].text);
 
         if (prev == 0 || next == 0) {
-          _reductions[i] = 0;
+          _reductions[i - 1] = 0;
           continue;
         }
 
-        _reductions[i] = (1 - pow(next / prev, 2)) * 100;
+        _reductions[i - 1] = (1 - pow(next / prev, 2)) * 100;
       }
       setState(() {});
     } catch (e) {
@@ -117,38 +115,43 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Расчёт маршрута')),
       body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Этап')),
-            DataColumn(label: Text('Диаметр (мм)')),
-            DataColumn(label: Text('Обжатие (%)')),
-          ],
-          rows: [
-            for (int i = 0; i < 12; i++)
-              DataRow(
-                cells: [
-                  DataCell(Text(i == 0 ? 'Заготовка' : 'Блок $i')),
-                  DataCell(
-                    SizedBox(
-                      width: 100,
-                      child: TextField(
-                        controller: _diameterControllers[i],
-                        keyboardType: TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: i == 0 ? 'Диаметр' : 'Блок $i',
-                        ),
-                        onChanged: (value) => _calculateReductions(),
-                      ),
+        child: Column(
+          children: [
+            for (int i = 0; i < 16; i++) ...[
+              ListTile(
+                title: Text(i == 0 ? 'Заготовка' : 'Блок $i'),
+                trailing: SizedBox(
+                  width: 100,
+                  child: TextField(
+                    controller: _diameterControllers[i],
+                    keyboardType: TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    decoration: InputDecoration(
+                      hintText: i == 0 ? 'Диаметр' : 'Блок $i',
+                    ),
+                    onChanged: (value) => _calculateReductions(),
                   ),
-                  DataCell(
-                    Text(i > 0 ? _reductions[i].toStringAsFixed(2) : ''),
-                  ),
-                ],
+                ),
               ),
+              if (i > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Обжатие: ${_reductions[i - 1].toStringAsFixed(2)}%',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (i < 15) const Divider(),
+            ],
           ],
         ),
       ),
@@ -171,11 +174,14 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
 
   double _totalReduction = 0;
   double _unitReduction = 0;
-  double _vsrRaw = 0;
-  double _vsrFinal = 0;
+  double _vsrRaw1 = 0;
+  double _vsrRaw2 = 0;
+  double _vsrFinal1 = 0;
+  double _vsrFinal2 = 0;
   List<Map<String, dynamic>> _routeSteps = [];
 
   double _parseInput(String value) {
+    if (value.isEmpty) return 0;
     return double.tryParse(value.replaceAll(',', '.')) ?? 0;
   }
 
@@ -186,29 +192,53 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
       final int passes = int.tryParse(_passes.text) ?? 0;
       final double carbon = _parseInput(_carbon.text);
 
-      // Основные расчёты
-      _totalReduction = (pow(dRaw, 2) - pow(dFinal, 2)) / pow(dRaw, 2) * 100;
-      _unitReduction =
-          (1 - pow((100 - _totalReduction) / 100, 1 / passes)) * 100;
-      _vsrRaw = 100 * dFinal + 53 - dRaw - 5;
-      _vsrFinal =
-          _vsrRaw +
-          (0.6 * (dFinal + dRaw / 40 + 0.01 * _totalReduction) * carbon) /
-              (log(sqrt(100 - _totalReduction)) / log(10) +
-                  0.0005 * _totalReduction);
+      if (dRaw == 0 || dFinal == 0 || passes == 0) {
+        throw Exception('Неверные входные данные');
+      }
 
-      // Расчёт маршрута (таблица 2)
+      // Основные расчёты
+      _totalReduction = (1 - pow(dFinal / dRaw, 2)) * 100;
+      _unitReduction = (1 - pow(dFinal / dRaw, 1 / passes)) * 100;
+
+      // ВСР заготовка (два значения)
+      _vsrRaw1 = 100 * carbon + 53 - dRaw - 5;
+      _vsrRaw2 = 100 * carbon + 53 - dRaw + 5;
+
+      // ВСР готовый (два значения)
+      final commonPart =
+          0.6 * (carbon + dRaw / 40 + 0.01 * _unitReduction) * _totalReduction;
+
+      // Первое значение ВСР готовый
+      final denominator1 =
+          log(sqrt(100 - _unitReduction)) / log(10) + 0.0005 * _unitReduction;
+      _vsrFinal1 =
+          _vsrRaw1 + (denominator1 != 0 ? commonPart / denominator1 : 0);
+
+      // Второе значение ВСР готовый
+      final denominator2 =
+          log(sqrt(100 - _totalReduction)) / log(10) + 0.0005 * _totalReduction;
+      _vsrFinal2 =
+          _vsrRaw2 + (denominator2 != 0 ? commonPart / denominator2 : 0);
+
+      // Расчёт маршрута с обжатиями между блоками
       _routeSteps = [];
       double currentDiameter = dRaw;
+      double prevDiameter = dRaw;
+
       for (int i = 0; i <= passes; i++) {
+        String reduction = '-';
+        if (i > 0) {
+          reduction =
+              ((1 - pow(currentDiameter / prevDiameter, 2)) * 100)
+                  .toStringAsFixed(2) +
+              '%';
+          prevDiameter = currentDiameter;
+        }
+
         _routeSteps.add({
           'pass': i == 0 ? 'Заготовка' : 'Проход $i',
           'diameter': currentDiameter.toStringAsFixed(2),
-          'reduction':
-              i == 0
-                  ? '-'
-                  : ((currentDiameter - _routeSteps[i - 1]['diameter']) * -1)
-                      .toStringAsFixed(2),
+          'reduction': reduction,
         });
 
         if (i < passes) {
@@ -218,9 +248,9 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
 
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка в данных! Проверьте ввод')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ошибка: ${e.toString()}')));
     }
   }
 
@@ -239,7 +269,7 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                     child: TextField(
                       controller: _diameterRaw,
                       decoration: const InputDecoration(
-                        labelText: 'D Заготовки',
+                        labelText: 'D Заготовки (мм)',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.numberWithOptions(
@@ -252,7 +282,7 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                     child: TextField(
                       controller: _diameterFinal,
                       decoration: const InputDecoration(
-                        labelText: 'D Чистовой',
+                        labelText: 'D Чистовой (мм)',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.numberWithOptions(
@@ -294,34 +324,74 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                 'Единичное обжатие',
                 '${_unitReduction.toStringAsFixed(2)} %',
               ),
-              _buildResultRow('ВСР (Заготовка)', _vsrRaw.toStringAsFixed(2)),
-              _buildResultRow('ВСР (Готовый)', _vsrFinal.toStringAsFixed(2)),
+              _buildDoubleResultRow(
+                'ВСР (Заготовка)',
+                _vsrRaw1.toStringAsFixed(2),
+                _vsrRaw2.toStringAsFixed(2),
+              ),
+              _buildDoubleResultRow(
+                'ВСР (Готовый)',
+                _vsrFinal1.toStringAsFixed(2),
+                _vsrFinal2.toStringAsFixed(2),
+              ),
 
               // Таблица маршрута
               const SizedBox(height: 24),
               const Text(
                 'Маршрут волочения:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              DataTable(
-                columns: const [
-                  DataColumn(label: Text('Этап')),
-                  DataColumn(label: Text('Диаметр (мм)')),
-                  DataColumn(label: Text('Δ (мм)')),
+              Table(
+                border: TableBorder.all(color: Colors.grey),
+                children: [
+                  const TableRow(
+                    decoration: BoxDecoration(color: Colors.blueGrey),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Text(
+                          'Этап',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Text(
+                          'Диаметр (мм)',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Text(
+                          'Обжатие (%)',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ..._routeSteps
+                      .map(
+                        (step) => TableRow(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(step['pass']),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(step['diameter']),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(step['reduction']),
+                            ),
+                          ],
+                        ),
+                      )
+                      .toList(),
                 ],
-                rows:
-                    _routeSteps
-                        .map(
-                          (step) => DataRow(
-                            cells: [
-                              DataCell(Text(step['pass'])),
-                              DataCell(Text(step['diameter'])),
-                              DataCell(Text(step['reduction'])),
-                            ],
-                          ),
-                        )
-                        .toList(),
               ),
             ],
           ),
@@ -340,6 +410,37 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
           Text(
             value,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoubleResultRow(String title, String value1, String value2) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 16)),
+          Row(
+            children: [
+              Text(
+                value1,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const Text(' - '),
+              Text(
+                value2,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
         ],
       ),
