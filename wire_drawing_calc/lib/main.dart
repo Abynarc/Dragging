@@ -111,6 +111,14 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   }
 
   @override
+  void dispose() {
+    for (var controller in _diameterControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Расчёт маршрута')),
@@ -180,9 +188,39 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
   double _vsrFinal2 = 0;
   List<Map<String, dynamic>> _routeSteps = [];
 
+  @override
+  void initState() {
+    super.initState();
+    // Здесь можно добавить загрузку сохраненных данных
+  }
+
+  @override
+  void dispose() {
+    _diameterRaw.dispose();
+    _diameterFinal.dispose();
+    _passes.dispose();
+    _carbon.dispose();
+    super.dispose();
+  }
+
   double _parseInput(String value) {
     if (value.isEmpty) return 0;
     return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  }
+
+  void _resetData() {
+    _diameterRaw.clear();
+    _diameterFinal.clear();
+    _passes.clear();
+    _carbon.clear();
+    _totalReduction = 0;
+    _unitReduction = 0;
+    _vsrRaw1 = 0;
+    _vsrRaw2 = 0;
+    _vsrFinal1 = 0;
+    _vsrFinal2 = 0;
+    _routeSteps.clear();
+    setState(() {});
   }
 
   void _calculate() {
@@ -214,15 +252,11 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
       final commonPart =
           0.6 * (carbon + dRaw / 40 + 0.01 * _unitReduction) * _totalReduction;
 
-      final denominator1 =
-          log(sqrt(100 - _unitReduction)) / log(10) + 0.0005 * _unitReduction;
-      _vsrFinal1 =
-          _vsrRaw1 + (denominator1 != 0 ? commonPart / denominator1 : 0);
-
-      final denominator2 =
+      final denominator =
           log(sqrt(100 - _totalReduction)) / log(10) + 0.0005 * _totalReduction;
-      _vsrFinal2 =
-          _vsrRaw2 + (denominator2 != 0 ? commonPart / denominator2 : 0);
+
+      _vsrFinal1 = _vsrRaw1 + (denominator != 0 ? commonPart / denominator : 0);
+      _vsrFinal2 = _vsrRaw2 + (denominator != 0 ? commonPart / denominator : 0);
 
       // 5. Расчет маршрута с фиксированным единичным обжатием
       _routeSteps = [];
@@ -254,6 +288,14 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Ошибка: ${e.toString()}')));
     }
+  }
+
+  String _formatCarbonInput(String input) {
+    // Добавляем 0 перед точкой или запятой, если они первые
+    if (input.startsWith('.') || input.startsWith(',')) {
+      return '0${input.replaceFirst(',', '.')}';
+    }
+    return input.replaceAll(',', '.');
   }
 
   @override
@@ -311,11 +353,28 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
+                onChanged: (value) {
+                  if (value.startsWith('.') || value.startsWith(',')) {
+                    _carbon.text = _formatCarbonInput(value);
+                    _carbon.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _carbon.text.length),
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _calculate,
-                child: const Text('Рассчитать'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: _resetData,
+                    child: const Text('Сброс'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _calculate,
+                    child: const Text('Рассчитать'),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
               _buildResultRow(
@@ -336,7 +395,6 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                 _vsrFinal1.toStringAsFixed(2),
                 _vsrFinal2.toStringAsFixed(2),
               ),
-
               const SizedBox(height: 24),
               if (_routeSteps.isNotEmpty) ...[
                 const Text(
