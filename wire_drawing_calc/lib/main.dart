@@ -192,47 +192,46 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
       final int passes = int.tryParse(_passes.text) ?? 0;
       final double carbon = _parseInput(_carbon.text);
 
-      if (dRaw == 0 || dFinal == 0 || passes == 0) {
+      if (dRaw <= 0 || dFinal <= 0 || passes <= 0) {
         throw Exception('Неверные входные данные');
       }
+      if (dFinal >= dRaw) {
+        throw Exception('Чистовой диаметр должен быть меньше заготовки');
+      }
 
-      // Основные расчёты
+      // 1. Расчет суммарного обжатия
       _totalReduction = (1 - pow(dFinal / dRaw, 2)) * 100;
-      _unitReduction = (1 - pow(dFinal / dRaw, 1 / passes)) * 100;
 
-      // ВСР заготовка (два значения)
+      // 2. Расчет единичного обжатия
+      _unitReduction =
+          (1 - pow((100 - _totalReduction) / 100, 1 / passes)) * 100;
+
+      // 3. Расчет ВСР заготовки (два значения)
       _vsrRaw1 = 100 * carbon + 53 - dRaw - 5;
       _vsrRaw2 = 100 * carbon + 53 - dRaw + 5;
 
-      // ВСР готовый (два значения)
+      // 4. Расчет ВСР готового (два значения)
       final commonPart =
           0.6 * (carbon + dRaw / 40 + 0.01 * _unitReduction) * _totalReduction;
 
-      // Первое значение ВСР готовый
       final denominator1 =
           log(sqrt(100 - _unitReduction)) / log(10) + 0.0005 * _unitReduction;
       _vsrFinal1 =
           _vsrRaw1 + (denominator1 != 0 ? commonPart / denominator1 : 0);
 
-      // Второе значение ВСР готовый
       final denominator2 =
           log(sqrt(100 - _totalReduction)) / log(10) + 0.0005 * _totalReduction;
       _vsrFinal2 =
           _vsrRaw2 + (denominator2 != 0 ? commonPart / denominator2 : 0);
 
-      // Расчёт маршрута с обжатиями между блоками
+      // 5. Расчет маршрута с фиксированным единичным обжатием
       _routeSteps = [];
       double currentDiameter = dRaw;
-      double prevDiameter = dRaw;
 
       for (int i = 0; i <= passes; i++) {
         String reduction = '-';
         if (i > 0) {
-          reduction =
-              ((1 - pow(currentDiameter / prevDiameter, 2)) * 100)
-                  .toStringAsFixed(2) +
-              '%';
-          prevDiameter = currentDiameter;
+          reduction = _unitReduction.toStringAsFixed(2) + '%';
         }
 
         _routeSteps.add({
@@ -242,9 +241,12 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
         });
 
         if (i < passes) {
-          currentDiameter -= (dRaw - dFinal) / passes;
+          currentDiameter *= sqrt(1 - _unitReduction / 100);
         }
       }
+
+      // Корректировка последнего диаметра
+      _routeSteps.last['diameter'] = dFinal.toStringAsFixed(2);
 
       setState(() {});
     } catch (e) {
@@ -335,64 +337,65 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                 _vsrFinal2.toStringAsFixed(2),
               ),
 
-              // Таблица маршрута
               const SizedBox(height: 24),
-              const Text(
-                'Маршрут волочения:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Table(
-                border: TableBorder.all(color: Colors.grey),
-                children: [
-                  const TableRow(
-                    decoration: BoxDecoration(color: Colors.blueGrey),
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Text(
-                          'Этап',
-                          style: TextStyle(color: Colors.white),
+              if (_routeSteps.isNotEmpty) ...[
+                const Text(
+                  'Маршрут волочения:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Table(
+                  border: TableBorder.all(color: Colors.grey),
+                  children: [
+                    const TableRow(
+                      decoration: BoxDecoration(color: Colors.blueGrey),
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text(
+                            'Этап',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Text(
-                          'Диаметр (мм)',
-                          style: TextStyle(color: Colors.white),
+                        Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text(
+                            'Диаметр (мм)',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Text(
-                          'Обжатие (%)',
-                          style: TextStyle(color: Colors.white),
+                        Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Text(
+                            'Обжатие (%)',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  ..._routeSteps
-                      .map(
-                        (step) => TableRow(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Text(step['pass']),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Text(step['diameter']),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Text(step['reduction']),
-                            ),
-                          ],
-                        ),
-                      )
-                      .toList(),
-                ],
-              ),
+                      ],
+                    ),
+                    ..._routeSteps
+                        .map(
+                          (step) => TableRow(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(step['pass']),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(step['diameter']),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(step['reduction']),
+                              ),
+                            ],
+                          ),
+                        )
+                        .toList(),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
