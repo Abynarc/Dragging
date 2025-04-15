@@ -198,12 +198,9 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
   double _vsrRaw2 = 0;
   double _vsrFinal1 = 0;
   double _vsrFinal2 = 0;
-  List<Map<String, dynamic>> _routeSteps = [];
 
-  @override
-  void initState() {
-    super.initState();
-  }
+  List<TextEditingController> _diameterControllers = [];
+  List<double> _reductions = [];
 
   @override
   void dispose() {
@@ -211,6 +208,9 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
     _diameterFinal.dispose();
     _passes.dispose();
     _carbon.dispose();
+    for (var controller in _diameterControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -224,13 +224,32 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
     _diameterFinal.clear();
     _passes.clear();
     _carbon.clear();
+    for (var controller in _diameterControllers) {
+      controller.dispose();
+    }
+    _diameterControllers.clear();
+    _reductions.clear();
     _totalReduction = 0;
     _unitReduction = 0;
     _vsrRaw1 = 0;
     _vsrRaw2 = 0;
     _vsrFinal1 = 0;
     _vsrFinal2 = 0;
-    _routeSteps.clear();
+    setState(() {});
+  }
+
+  void _calculateReductions() {
+    for (int i = 1; i < _diameterControllers.length; i++) {
+      final double prev = _parseInput(_diameterControllers[i - 1].text);
+      final double next = _parseInput(_diameterControllers[i].text);
+
+      if (prev == 0 || next == 0) {
+        _reductions[i - 1] = 0;
+        continue;
+      }
+
+      _reductions[i - 1] = (1 - pow(next / prev, 2)) * 100;
+    }
     setState(() {});
   }
 
@@ -248,50 +267,35 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
         throw Exception('Чистовой диаметр должен быть меньше заготовки');
       }
 
-      // 1. Расчет суммарного обжатия
       _totalReduction = (1 - pow(dFinal / dRaw, 2)) * 100;
-
-      // 2. Расчет единичного обжатия
       _unitReduction =
           (1 - pow((100 - _totalReduction) / 100, 1 / passes)) * 100;
-
-      // 3. Расчет ВСР заготовки (два значения)
       _vsrRaw1 = 100 * carbon + 53 - dRaw - 5;
       _vsrRaw2 = 100 * carbon + 53 - dRaw + 5;
 
-      // 4. Расчет ВСР готового (два значения)
       final commonPart =
           0.6 * (carbon + dRaw / 40 + 0.01 * _unitReduction) * _totalReduction;
-
       final denominator =
           log(sqrt(100 - _totalReduction)) / log(10) + 0.0005 * _totalReduction;
 
       _vsrFinal1 = _vsrRaw1 + (denominator != 0 ? commonPart / denominator : 0);
       _vsrFinal2 = _vsrRaw2 + (denominator != 0 ? commonPart / denominator : 0);
 
-      // 5. Расчет маршрута с фиксированным единичным обжатием
-      _routeSteps = [];
+      _diameterControllers = List.generate(
+        passes + 1,
+        (_) => TextEditingController(),
+      );
+      _reductions = List.filled(passes, 0);
+
       double currentDiameter = dRaw;
-
       for (int i = 0; i <= passes; i++) {
-        String reduction = '-';
-        if (i > 0) {
-          reduction = _unitReduction.toStringAsFixed(2) + '%';
-        }
-
-        _routeSteps.add({
-          'pass': i == 0 ? 'Заготовка' : 'Проход $i',
-          'diameter': currentDiameter.toStringAsFixed(2),
-          'reduction': reduction,
-        });
-
+        _diameterControllers[i].text = currentDiameter.toStringAsFixed(2);
         if (i < passes) {
           currentDiameter *= sqrt(1 - _unitReduction / 100);
         }
       }
-
-      // Корректировка последнего диаметра
-      _routeSteps.last['diameter'] = dFinal.toStringAsFixed(2);
+      _diameterControllers[passes].text = dFinal.toStringAsFixed(2);
+      _calculateReductions();
 
       setState(() {});
     } catch (e) {
@@ -406,14 +410,23 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                 _vsrFinal2.toStringAsFixed(2),
               ),
               const SizedBox(height: 24),
-              if (_routeSteps.isNotEmpty) ...[
+              if (_diameterControllers.isNotEmpty) ...[
                 const Text(
                   'Маршрут волочения:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                const Text(
+                  'Вы можете редактировать диаметры в таблице',
+                  style: TextStyle(color: Colors.grey),
+                ),
                 const SizedBox(height: 8),
                 Table(
                   border: TableBorder.all(color: Colors.grey),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1),
+                    1: FlexColumnWidth(1.5),
+                    2: FlexColumnWidth(1),
+                  },
                   children: [
                     const TableRow(
                       decoration: BoxDecoration(color: Colors.blueGrey),
@@ -441,26 +454,63 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                         ),
                       ],
                     ),
-                    ..._routeSteps
-                        .map(
-                          (step) => TableRow(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Text(step['pass']),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Text(step['diameter']),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Text(step['reduction']),
-                              ),
-                            ],
+                    ..._diameterControllers.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final controller = entry.value;
+                      return TableRow(
+                        decoration: BoxDecoration(
+                          color: i % 2 == 0 ? Colors.grey[100] : Colors.white,
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(i == 0 ? 'Заготовка' : 'Проход $i'),
                           ),
-                        )
-                        .toList(),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.blue),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                child: TextField(
+                                  controller: controller,
+                                  keyboardType: TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: i == 0 ? 'Диаметр' : 'Блок $i',
+                                    hintStyle: TextStyle(
+                                      color: Colors.blue[300],
+                                    ),
+                                  ),
+                                  style: TextStyle(color: Colors.blue[800]),
+                                  onChanged: (value) => _calculateReductions(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              i == 0
+                                  ? '-'
+                                  : '${_reductions[i - 1].toStringAsFixed(2)}%',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ],
                 ),
               ],
