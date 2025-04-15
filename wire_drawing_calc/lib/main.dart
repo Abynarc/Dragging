@@ -56,6 +56,18 @@ class HomeScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
               child: const Text('Расчёт линейного маршрута'),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ZincCalculationScreen(),
+                    ),
+                  ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
+              child: const Text('Расчёт цинка на заготовке'),
+            ),
           ],
         ),
       ),
@@ -191,7 +203,6 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
   @override
   void initState() {
     super.initState();
-    // Здесь можно добавить загрузку сохраненных данных
   }
 
   @override
@@ -291,7 +302,6 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
   }
 
   String _formatCarbonInput(String input) {
-    // Добавляем 0 перед точкой или запятой, если они первые
     if (input.startsWith('.') || input.startsWith(',')) {
       return '0${input.replaceFirst(',', '.')}';
     }
@@ -504,6 +514,275 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ZincCalculationScreen extends StatefulWidget {
+  const ZincCalculationScreen({super.key});
+
+  @override
+  State<ZincCalculationScreen> createState() => _ZincCalculationScreenState();
+}
+
+class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
+  final TextEditingController _diameterRawController = TextEditingController();
+  final TextEditingController _diameterFinalController =
+      TextEditingController();
+  String? _selectedGroup;
+  double _result = 0;
+  String _errorMessage = '';
+
+  final List<Map<String, dynamic>> _zincTable = [
+    {'range': '0,20 ≤ D < 0,25', 'C': 16, 'Ж': 21, 'ОЖ': null},
+    {'range': '0,25 ≤ D < 0,39', 'C': 21, 'Ж': 30, 'ОЖ': null},
+    {'range': '0,39 ≤ D < 0,46', 'C': 32, 'Ж': 42, 'ОЖ': null},
+    {'range': '0,46 ≤ D < 0,50', 'C': 37, 'Ж': 42, 'ОЖ': null},
+    {'range': '0,50 ≤ D < 0,54', 'C': 37, 'Ж': 50, 'ОЖ': null},
+    {'range': '0,54 ≤ D < 0,56', 'C': null, 'Ж': 50, 'ОЖ': null},
+    {'range': '0,56 ≤ D < 0,60', 'C': null, 'Ж': 52, 'ОЖ': null},
+    {'range': '0,60 ≤ D < 0,65', 'C': null, 'Ж': 60, 'ОЖ': null},
+    {'range': '0,65', 'C': null, 'Ж': 60, 'ОЖ': 115},
+    {'range': '0,66 ≤ D < 0,70', 'C': null, 'Ж': 63, 'ОЖ': 120},
+    {'range': '0,70 ≤ D < 0,76', 'C': null, 'Ж': 63, 'ОЖ': 130},
+    {'range': '0,76 ≤ D < 0,80', 'C': null, 'Ж': 73, 'ОЖ': 130},
+    {'range': '0,80 ≤ D < 0,90', 'C': null, 'Ж': 73, 'ОЖ': 145},
+    {'range': '0,90 ≤ D < 0,96', 'C': null, 'Ж': 73, 'ОЖ': 155},
+    {'range': '0,96 ≤ D < 1,00', 'C': null, 'Ж': 84, 'ОЖ': 155},
+    {'range': '1,00 ≤ D < 1,16', 'C': null, 'Ж': 84, 'ОЖ': 165},
+    {'range': '1,16 ≤ D < 1,20', 'C': null, 'Ж': 94, 'ОЖ': 165},
+    {'range': '1,20 ≤ D < 1,40', 'C': null, 'Ж': 94, 'ОЖ': 180},
+    {'range': '1,40 ≤ D < 1,65', 'C': null, 'Ж': 105, 'ОЖ': 195},
+    {'range': '1,65 ≤ D < 1,81', 'C': null, 'Ж': 105, 'ОЖ': 205},
+    {'range': '1,81 ≤ D < 1,85', 'C': null, 'Ж': 115, 'ОЖ': 205},
+    {'range': '1,85 ≤ D < 2,15', 'C': null, 'Ж': 115, 'ОЖ': 215},
+    {'range': '2,15 ≤ D < 2,41', 'C': null, 'Ж': 125, 'ОЖ': 230},
+    {'range': '2,41 ≤ D < 2,50', 'C': null, 'Ж': 135, 'ОЖ': 230},
+    {'range': '2,50 ≤ D < 2,80', 'C': null, 'Ж': 135, 'ОЖ': 245},
+    {'range': '2,80 ≤ D < 3,01', 'C': null, 'Ж': 135, 'ОЖ': 255},
+    {'range': '3,01 ≤ D < 3,20', 'C': null, 'Ж': 142, 'ОЖ': 255},
+    {'range': '3,20 ≤ D < 3,80', 'C': null, 'Ж': 142, 'ОЖ': 265},
+    {'range': '3,80', 'C': null, 'Ж': 142, 'ОЖ': 275},
+    {'range': '3,81 ≤ D < 4,40', 'C': null, 'Ж': 158, 'ОЖ': 275},
+    {'range': '4,40', 'C': null, 'Ж': 158, 'ОЖ': 280},
+    {'range': '4,41 ≤ D < 5,01', 'C': null, 'Ж': 173, 'ОЖ': 280},
+  ];
+
+  @override
+  void dispose() {
+    _diameterRawController.dispose();
+    _diameterFinalController.dispose();
+    super.dispose();
+  }
+
+  double _parseInput(String value) {
+    return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  }
+
+  double? _getZincValueForDiameter(double diameter, String group) {
+    for (var row in _zincTable) {
+      final range = row['range'] as String;
+
+      if (range.contains('≤') && range.contains('<')) {
+        final parts = range.split('≤ D <');
+        if (parts.length == 2) {
+          final min = _parseInput(parts[0].trim());
+          final max = _parseInput(parts[1].trim());
+          if (diameter >= min && diameter < max) {
+            return row[group]?.toDouble();
+          }
+        }
+      } else {
+        final exactValue = _parseInput(range);
+        if (diameter == exactValue) {
+          return row[group]?.toDouble();
+        }
+      }
+    }
+    return null;
+  }
+
+  void _calculate() {
+    setState(() {
+      _errorMessage = '';
+      _result = 0;
+    });
+
+    if (_diameterRawController.text.isEmpty ||
+        _diameterFinalController.text.isEmpty) {
+      setState(() {
+        _errorMessage = 'Введите диаметры заготовки и готовой проволоки';
+      });
+      return;
+    }
+
+    if (_selectedGroup == null) {
+      setState(() {
+        _errorMessage = 'Выберите группу цинка (С, Ж или ОЖ)';
+      });
+      return;
+    }
+
+    final double dRaw = _parseInput(_diameterRawController.text);
+    final double dFinal = _parseInput(_diameterFinalController.text);
+
+    if (dFinal >= dRaw) {
+      setState(() {
+        _errorMessage =
+            'Диаметр готовой проволоки должен быть меньше диаметра заготовки';
+      });
+      return;
+    }
+
+    final double? pFinal = _getZincValueForDiameter(dFinal, _selectedGroup!);
+
+    if (pFinal == null) {
+      setState(() {
+        _errorMessage = 'Данной группы на заданном диаметре нет';
+      });
+      return;
+    }
+
+    final double k = _selectedGroup == 'ОЖ' ? 1.2 : 1.1;
+    setState(() {
+      _result = (dRaw / dFinal) * pFinal * k;
+    });
+  }
+
+  void _reset() {
+    setState(() {
+      _diameterRawController.clear();
+      _diameterFinalController.clear();
+      _selectedGroup = null;
+      _result = 0;
+      _errorMessage = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Расчёт цинка на заготовке')),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _diameterRawController,
+                decoration: const InputDecoration(
+                  labelText: 'Диаметр заготовки (мм)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _diameterFinalController,
+                decoration: const InputDecoration(
+                  labelText: 'Диаметр готовой проволоки (мм)',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 20),
+              const Text('Группа цинка:', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => setState(() => _selectedGroup = 'C'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _selectedGroup == 'C' ? Colors.blue : null,
+                      foregroundColor:
+                          _selectedGroup == 'C' ? Colors.white : null,
+                    ),
+                    child: const Text('С'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _selectedGroup = 'Ж'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _selectedGroup == 'Ж' ? Colors.blue : null,
+                      foregroundColor:
+                          _selectedGroup == 'Ж' ? Colors.white : null,
+                    ),
+                    child: const Text('Ж'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _selectedGroup = 'ОЖ'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _selectedGroup == 'ОЖ' ? Colors.blue : null,
+                      foregroundColor:
+                          _selectedGroup == 'ОЖ' ? Colors.white : null,
+                    ),
+                    child: const Text('ОЖ'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: _reset,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(120, 50),
+                    ),
+                    child: const Text('Сброс'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _calculate,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(120, 50),
+                    ),
+                    child: const Text('Рассчитать'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (_errorMessage.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _errorMessage,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              if (_result > 0)
+                Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
