@@ -840,21 +840,11 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   double? _getZincValueForDiameter(double diameter, String group) {
     for (var row in _zincTable) {
       final range = row['range'] as String;
+      final min = row['min'] as double;
+      final max = row['max'] as double;
 
-      if (range.contains('≤') && range.contains('<')) {
-        final parts = range.split('≤ D <');
-        if (parts.length == 2) {
-          final min = _parseInput(parts[0].trim());
-          final max = _parseInput(parts[1].trim());
-          if (diameter >= min && diameter < max) {
-            return row[group]?.toDouble();
-          }
-        }
-      } else {
-        final exactValue = _parseInput(range);
-        if (diameter == exactValue) {
-          return row[group]?.toDouble();
-        }
+      if (diameter >= min && diameter <= max) {
+        return row[group]?.toDouble();
       }
     }
     return null;
