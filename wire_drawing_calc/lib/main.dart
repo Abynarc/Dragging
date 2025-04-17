@@ -8,14 +8,45 @@ void main() {
 }
 
 class VersionChecker {
-  static const int minSupportedVersionCode = 2;
+  static const String minSupportedVersion = '1.0.2';
+  static const String minSupportedBuildNumber = '3';
   static const String appStoreUrl =
       'https://apps.rustore.ru/app/com.example.wire_drawing_calc';
 
   static Future<bool> isUpdateRequired() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
-    return currentVersionCode < minSupportedVersionCode;
+    final currentVersion = packageInfo.version;
+    final currentBuildNumber = packageInfo.buildNumber;
+
+    // Проверяем, является ли текущая версия 1.0.1+2
+    final bool isOldVersion =
+        currentVersion == '1.0.1' && currentBuildNumber == '2';
+
+    // Или проверяем, что версия меньше минимальной поддерживаемой
+    final bool isVersionLower =
+        _compareVersions(currentVersion, minSupportedVersion) < 0 ||
+        (currentVersion == minSupportedVersion &&
+            _compareBuildNumbers(currentBuildNumber, minSupportedBuildNumber) <
+                0);
+
+    return isOldVersion || isVersionLower;
+  }
+
+  // Сравнение версий вида X.Y.Z
+  static int _compareVersions(String v1, String v2) {
+    final v1Parts = v1.split('.').map(int.parse).toList();
+    final v2Parts = v2.split('.').map(int.parse).toList();
+
+    for (int i = 0; i < v1Parts.length; i++) {
+      if (v1Parts[i] > v2Parts[i]) return 1;
+      if (v1Parts[i] < v2Parts[i]) return -1;
+    }
+    return 0;
+  }
+
+  // Сравнение build numbers
+  static int _compareBuildNumbers(String b1, String b2) {
+    return int.parse(b1).compareTo(int.parse(b2));
   }
 
   static Future<void> showUpdateDialog(BuildContext context) async {
@@ -53,6 +84,7 @@ class AppStartupScreen extends StatefulWidget {
 
 class _AppStartupScreenState extends State<AppStartupScreen> {
   bool _isChecking = true;
+  bool _updateRequired = false;
 
   @override
   void initState() {
@@ -65,25 +97,52 @@ class _AppStartupScreenState extends State<AppStartupScreen> {
       final isUpdateRequired = await VersionChecker.isUpdateRequired();
 
       if (mounted) {
-        setState(() => _isChecking = false);
+        setState(() {
+          _isChecking = false;
+          _updateRequired = isUpdateRequired;
+        });
 
         if (isUpdateRequired) {
           await VersionChecker.showUpdateDialog(context);
         }
       }
     } catch (e) {
-      if (mounted) setState(() => _isChecking = false);
+      if (mounted) {
+        setState(() {
+          _isChecking = false;
+          _updateRequired = true;
+        });
+        await VersionChecker.showUpdateDialog(context);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_updateRequired) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Требуется обновление приложения'),
+              ElevatedButton(
+                onPressed: () => VersionChecker.showUpdateDialog(context),
+                child: const Text('Обновить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return _isChecking
         ? const Scaffold(body: Center(child: CircularProgressIndicator()))
         : const HomeScreen();
   }
 }
 
+// Остальной код остается без изменений...
 class WireDrawingApp extends StatelessWidget {
   const WireDrawingApp({super.key});
 
