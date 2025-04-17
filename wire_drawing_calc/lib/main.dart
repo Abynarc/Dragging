@@ -1,8 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 
 void main() {
   runApp(const WireDrawingApp());
+}
+
+class VersionChecker {
+  static const int minSupportedVersionCode = 2;
+  static const String appStoreUrl =
+      'https://apps.rustore.ru/app/com.example.wire_drawing_calc';
+
+  static Future<bool> isUpdateRequired() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
+    return currentVersionCode < minSupportedVersionCode;
+  }
+
+  static Future<void> showUpdateDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Требуется обновление'),
+          content: const Text(
+            'Для продолжения работы приложения необходимо обновить его до последней версии.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Обновить'),
+              onPressed: () async {
+                if (await canLaunch(appStoreUrl)) {
+                  await launch(appStoreUrl);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class AppStartupScreen extends StatefulWidget {
+  const AppStartupScreen({super.key});
+
+  @override
+  State<AppStartupScreen> createState() => _AppStartupScreenState();
+}
+
+class _AppStartupScreenState extends State<AppStartupScreen> {
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkVersion();
+  }
+
+  Future<void> _checkVersion() async {
+    try {
+      final isUpdateRequired = await VersionChecker.isUpdateRequired();
+
+      if (mounted) {
+        setState(() => _isChecking = false);
+
+        if (isUpdateRequired) {
+          await VersionChecker.showUpdateDialog(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isChecking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _isChecking
+        ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+        : const HomeScreen();
+  }
 }
 
 class WireDrawingApp extends StatelessWidget {
@@ -13,7 +92,7 @@ class WireDrawingApp extends StatelessWidget {
     return MaterialApp(
       title: 'Калькулятор волочения',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomeScreen(),
+      home: const AppStartupScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -415,18 +494,9 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                   'Маршрут волочения:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const Text(
-                  'Вы можете редактировать диаметры в таблице',
-                  style: TextStyle(color: Colors.grey),
-                ),
                 const SizedBox(height: 8),
                 Table(
                   border: TableBorder.all(color: Colors.grey),
-                  columnWidths: const {
-                    0: FlexColumnWidth(1),
-                    1: FlexColumnWidth(1.5),
-                    2: FlexColumnWidth(1),
-                  },
                   children: [
                     const TableRow(
                       decoration: BoxDecoration(color: Colors.blueGrey),
@@ -458,9 +528,6 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                       final i = entry.key;
                       final controller = entry.value;
                       return TableRow(
-                        decoration: BoxDecoration(
-                          color: i % 2 == 0 ? Colors.grey[100] : Colors.white,
-                        ),
                         children: [
                           Padding(
                             padding: const EdgeInsets.all(8),
@@ -468,32 +535,16 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
                           ),
                           Padding(
                             padding: const EdgeInsets.all(8),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.blue),
+                            child: TextField(
+                              controller: controller,
+                              keyboardType: TextInputType.numberWithOptions(
+                                decimal: true,
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                                child: TextField(
-                                  controller: controller,
-                                  keyboardType: TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: i == 0 ? 'Диаметр' : 'Блок $i',
-                                    hintStyle: TextStyle(
-                                      color: Colors.blue[300],
-                                    ),
-                                  ),
-                                  style: TextStyle(color: Colors.blue[800]),
-                                  onChanged: (value) => _calculateReductions(),
-                                ),
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: i == 0 ? 'Диаметр' : 'Блок $i',
                               ),
+                              onChanged: (value) => _calculateReductions(),
                             ),
                           ),
                           Padding(
@@ -585,38 +636,135 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   String _errorMessage = '';
 
   final List<Map<String, dynamic>> _zincTable = [
-    {'range': '0,20 ≤ D < 0,25', 'C': 16, 'Ж': 21, 'ОЖ': null},
-    {'range': '0,25 ≤ D < 0,39', 'C': 21, 'Ж': 30, 'ОЖ': null},
-    {'range': '0,39 ≤ D < 0,46', 'C': 32, 'Ж': 42, 'ОЖ': null},
-    {'range': '0,46 ≤ D < 0,50', 'C': 37, 'Ж': 42, 'ОЖ': null},
-    {'range': '0,50 ≤ D < 0,54', 'C': 37, 'Ж': 50, 'ОЖ': null},
-    {'range': '0,54 ≤ D < 0,56', 'C': null, 'Ж': 50, 'ОЖ': null},
-    {'range': '0,56 ≤ D < 0,60', 'C': null, 'Ж': 52, 'ОЖ': null},
-    {'range': '0,60 ≤ D < 0,65', 'C': null, 'Ж': 60, 'ОЖ': null},
-    {'range': '0,65', 'C': null, 'Ж': 60, 'ОЖ': 115},
-    {'range': '0,66 ≤ D < 0,70', 'C': null, 'Ж': 63, 'ОЖ': 120},
-    {'range': '0,70 ≤ D < 0,76', 'C': null, 'Ж': 63, 'ОЖ': 130},
-    {'range': '0,76 ≤ D < 0,80', 'C': null, 'Ж': 73, 'ОЖ': 130},
-    {'range': '0,80 ≤ D < 0,90', 'C': null, 'Ж': 73, 'ОЖ': 145},
-    {'range': '0,90 ≤ D < 0,96', 'C': null, 'Ж': 73, 'ОЖ': 155},
-    {'range': '0,96 ≤ D < 1,00', 'C': null, 'Ж': 84, 'ОЖ': 155},
-    {'range': '1,00 ≤ D < 1,16', 'C': null, 'Ж': 84, 'ОЖ': 165},
-    {'range': '1,16 ≤ D < 1,20', 'C': null, 'Ж': 94, 'ОЖ': 165},
-    {'range': '1,20 ≤ D < 1,40', 'C': null, 'Ж': 94, 'ОЖ': 180},
-    {'range': '1,40 ≤ D < 1,65', 'C': null, 'Ж': 105, 'ОЖ': 195},
-    {'range': '1,65 ≤ D < 1,81', 'C': null, 'Ж': 105, 'ОЖ': 205},
-    {'range': '1,81 ≤ D < 1,85', 'C': null, 'Ж': 115, 'ОЖ': 205},
-    {'range': '1,85 ≤ D < 2,15', 'C': null, 'Ж': 115, 'ОЖ': 215},
-    {'range': '2,15 ≤ D < 2,41', 'C': null, 'Ж': 125, 'ОЖ': 230},
-    {'range': '2,41 ≤ D < 2,50', 'C': null, 'Ж': 135, 'ОЖ': 230},
-    {'range': '2,50 ≤ D < 2,80', 'C': null, 'Ж': 135, 'ОЖ': 245},
-    {'range': '2,80 ≤ D < 3,01', 'C': null, 'Ж': 135, 'ОЖ': 255},
-    {'range': '3,01 ≤ D < 3,20', 'C': null, 'Ж': 142, 'ОЖ': 255},
-    {'range': '3,20 ≤ D < 3,80', 'C': null, 'Ж': 142, 'ОЖ': 265},
-    {'range': '3,80', 'C': null, 'Ж': 142, 'ОЖ': 275},
-    {'range': '3,81 ≤ D < 4,40', 'C': null, 'Ж': 158, 'ОЖ': 275},
-    {'range': '4,40', 'C': null, 'Ж': 158, 'ОЖ': 280},
-    {'range': '4,41 ≤ D < 5,01', 'C': null, 'Ж': 173, 'ОЖ': 280},
+    {'range': 'D = 0,18', 'min': 0.18, 'max': 0.18, 'C': 10, 'Ж': 20, 'ОЖ': 30},
+    {
+      'range': '0,18 < D ≤ 0,24',
+      'min': 0.18,
+      'max': 0.24,
+      'C': 15,
+      'Ж': 20,
+      'ОЖ': 30,
+    },
+    {
+      'range': '0,24 < D ≤ 0,32',
+      'min': 0.24,
+      'max': 0.32,
+      'C': 20,
+      'Ж': 25,
+      'ОЖ': 45,
+    },
+    {
+      'range': '0,32 < D ≤ 0,38',
+      'min': 0.32,
+      'max': 0.38,
+      'C': 20,
+      'Ж': 25,
+      'ОЖ': 60,
+    },
+    {
+      'range': '0,38 < D ≤ 0,45',
+      'min': 0.38,
+      'max': 0.45,
+      'C': 30,
+      'Ж': 40,
+      'ОЖ': 75,
+    },
+    {
+      'range': '0,45 < D ≤ 0,55',
+      'min': 0.45,
+      'max': 0.55,
+      'C': 35,
+      'Ж': 40,
+      'ОЖ': 90,
+    },
+    {
+      'range': '0,55 < D ≤ 0,65',
+      'min': 0.55,
+      'max': 0.65,
+      'C': 40,
+      'Ж': 50,
+      'ОЖ': 110,
+    },
+    {
+      'range': '0,65 < D ≤ 0,75',
+      'min': 0.65,
+      'max': 0.75,
+      'C': 40,
+      'Ж': 60,
+      'ОЖ': 120,
+    },
+    {
+      'range': '0,75 < D ≤ 0,95',
+      'min': 0.75,
+      'max': 0.95,
+      'C': 50,
+      'Ж': 70,
+      'ОЖ': 130,
+    },
+    {
+      'range': '0,95 < D ≤ 1,15',
+      'min': 0.95,
+      'max': 1.15,
+      'C': 60,
+      'Ж': 80,
+      'ОЖ': 150,
+    },
+    {
+      'range': '1,15 < D ≤ 1,40',
+      'min': 1.15,
+      'max': 1.40,
+      'C': 60,
+      'Ж': 90,
+      'ОЖ': 165,
+    },
+    {
+      'range': '1,40 < D ≤ 1,80',
+      'min': 1.40,
+      'max': 1.80,
+      'C': 70,
+      'Ж': 100,
+      'ОЖ': 180,
+    },
+    {
+      'range': '1,80 < D ≤ 2,40',
+      'min': 1.80,
+      'max': 2.40,
+      'C': 80,
+      'Ж': 110,
+      'ОЖ': 205,
+    },
+    {
+      'range': '2,40 < D ≤ 3,00',
+      'min': 2.40,
+      'max': 3.00,
+      'C': 90,
+      'Ж': 125,
+      'ОЖ': 230,
+    },
+    {
+      'range': '3,00 < D ≤ 3,80',
+      'min': 3.00,
+      'max': 3.80,
+      'C': 100,
+      'Ж': 135,
+      'ОЖ': 230,
+    },
+    {
+      'range': '3,80 < D ≤ 4,40',
+      'min': 3.80,
+      'max': 4.40,
+      'C': 110,
+      'Ж': 150,
+      'ОЖ': 245,
+    },
+    {
+      'range': '4,40 < D ≤ 5,10',
+      'min': 4.40,
+      'max': 5.10,
+      'C': 110,
+      'Ж': 165,
+      'ОЖ': 245,
+    },
   ];
 
   @override
@@ -714,125 +862,151 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Расчёт цинка на заготовке')),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _diameterRawController,
-                decoration: const InputDecoration(
-                  labelText: 'Диаметр заготовки (мм)',
-                  border: OutlineInputBorder(),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _diameterRawController,
+                      decoration: const InputDecoration(
+                        labelText: 'Диаметр заготовки (мм)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _diameterFinalController,
+                      decoration: const InputDecoration(
+                        labelText: 'Диаметр готовой проволоки (мм)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Группа цинка:', style: TextStyle(fontSize: 16)),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => setState(() => _selectedGroup = 'C'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                _selectedGroup == 'C' ? Colors.blue : null,
+                            foregroundColor:
+                                _selectedGroup == 'C' ? Colors.white : null,
+                          ),
+                          child: const Text('С'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => setState(() => _selectedGroup = 'Ж'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                _selectedGroup == 'Ж' ? Colors.blue : null,
+                            foregroundColor:
+                                _selectedGroup == 'Ж' ? Colors.white : null,
+                          ),
+                          child: const Text('Ж'),
+                        ),
+                        ElevatedButton(
+                          onPressed:
+                              () => setState(() => _selectedGroup = 'ОЖ'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                _selectedGroup == 'ОЖ' ? Colors.blue : null,
+                            foregroundColor:
+                                _selectedGroup == 'ОЖ' ? Colors.white : null,
+                          ),
+                          child: const Text('ОЖ'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _reset,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(120, 50),
+                          ),
+                          child: const Text('Сброс'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _calculate,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(120, 50),
+                          ),
+                          child: const Text('Рассчитать'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    if (_errorMessage.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _errorMessage,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    if (_result > 0)
+                      Container(
+                        margin: const EdgeInsets.only(top: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                  ],
                 ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _diameterFinalController,
-                decoration: const InputDecoration(
-                  labelText: 'Диаметр готовой проволоки (мм)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 20),
-              const Text('Группа цинка:', style: TextStyle(fontSize: 16)),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => setState(() => _selectedGroup = 'C'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _selectedGroup == 'C' ? Colors.blue : null,
-                      foregroundColor:
-                          _selectedGroup == 'C' ? Colors.white : null,
-                    ),
-                    child: const Text('С'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => setState(() => _selectedGroup = 'Ж'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _selectedGroup == 'Ж' ? Colors.blue : null,
-                      foregroundColor:
-                          _selectedGroup == 'Ж' ? Colors.white : null,
-                    ),
-                    child: const Text('Ж'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => setState(() => _selectedGroup = 'ОЖ'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _selectedGroup == 'ОЖ' ? Colors.blue : null,
-                      foregroundColor:
-                          _selectedGroup == 'ОЖ' ? Colors.white : null,
-                    ),
-                    child: const Text('ОЖ'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: _reset,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(120, 50),
-                    ),
-                    child: const Text('Сброс'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _calculate,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(120, 50),
-                    ),
-                    child: const Text('Рассчитать'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              if (_errorMessage.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _errorMessage,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              if (_result > 0)
-                Container(
-                  margin: const EdgeInsets.only(top: 20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            color: Colors.grey[200],
+            child: const Text(
+              'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
+              'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }
