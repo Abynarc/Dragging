@@ -1,36 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 
 void main() {
   runApp(const WireDrawingApp());
 }
 
-class WireDrawingApp extends StatelessWidget {
+class WireDrawingApp extends StatefulWidget {
   const WireDrawingApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Калькулятор волочения',
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
+  State<WireDrawingApp> createState() => _WireDrawingAppState();
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class _WireDrawingAppState extends State<WireDrawingApp> {
+  bool _darkMode = false;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  bool _darkMode = false;
+  void initState() {
+    super.initState();
+    // Определяем текущую тему устройства при запуске
+    _darkMode =
+        WidgetsBinding.instance.window.platformBrightness == Brightness.dark;
+  }
 
   void _toggleDarkMode() {
     setState(() {
@@ -41,89 +32,117 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Калькулятор волочения',
       theme: _darkMode ? ThemeData.dark() : ThemeData.light(),
+      home: HomeScreen(darkMode: _darkMode, toggleDarkMode: _toggleDarkMode),
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Режимы расчёта')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RouteCalculationScreen(),
-                      ),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  final bool darkMode;
+  final VoidCallback toggleDarkMode;
+
+  const HomeScreen({
+    super.key,
+    required this.darkMode,
+    required this.toggleDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Режимы расчёта')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RouteCalculationScreen(),
                     ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 50),
-                  padding: const EdgeInsets.all(16),
-                ),
-                child: const Text('Расчёт маршрута'),
+                  ),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(200, 50),
+                padding: const EdgeInsets.all(16),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LinearRouteScreen(),
-                      ),
+              child: const Text('Расчёт маршрута'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LinearRouteScreen(),
                     ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 50),
-                ),
-                child: const Text('Расчёт линейного маршрута'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ZincCalculationScreen(),
-                      ),
+                  ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
+              child: const Text('Расчёт линейного маршрута'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ZincCalculationScreen(),
                     ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 50),
-                ),
-                child: const Text('Расчёт цинка на заготовке'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ReferenceScreen(),
-                      ),
-                    ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 50),
-                ),
-                child: const Text('Справка и формулы'),
-              ),
-            ],
-          ),
+                  ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
+              child: const Text('Расчёт цинка на заготовке'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ReferenceScreen()),
+                  ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
+              child: const Text('Справка и формулы'),
+            ),
+          ],
         ),
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.only(top: 12, bottom: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Text(
                 'by DK and IB',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
-              IconButton(
-                icon: Icon(_darkMode ? Icons.wb_sunny : Icons.nightlight_round),
-                onPressed: _toggleDarkMode,
-                color: Colors.grey,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: InkWell(
+                onTap: toggleDarkMode,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).cardColor,
+                    border: Border.all(color: Colors.grey, width: 1),
+                  ),
+                  child: Icon(
+                    darkMode ? Icons.wb_sunny : Icons.nightlight_round,
+                    color: darkMode ? Colors.amber : Colors.black,
+                    size: 24,
+                  ),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -148,7 +167,7 @@ class ReferenceScreen extends StatelessWidget {
           ),
         ),
         body: Padding(
-          padding: const EdgeInsets.only(bottom: 40), // Отступ снизу
+          padding: const EdgeInsets.only(bottom: 60),
           child: const TabBarView(
             children: [FormulasAndSourcesTab(), ZincDensityTableTab()],
           ),
@@ -214,7 +233,7 @@ class FormulasAndSourcesTab extends StatelessWidget {
             source:
                 'Гуляев А.П. Технология волочения металлов. — М.: Металлургия, 1986',
           ),
-          const SizedBox(height: 20), // Дополнительный отступ снизу
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -258,6 +277,8 @@ class ZincDensityTableTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -276,38 +297,40 @@ class ZincDensityTableTab extends StatelessWidget {
               3: FixedColumnWidth(80),
             },
             children: [
-              const TableRow(
-                decoration: BoxDecoration(color: Colors.blueGrey),
+              TableRow(
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.blueGrey[800] : Colors.blueGrey,
+                ),
                 children: [
                   Padding(
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     child: Text(
                       'Номинальный диаметр, мм',
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     child: Text(
                       'С',
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     child: Text(
                       'Ж',
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     child: Text(
                       'ОЖ',
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -332,7 +355,7 @@ class ZincDensityTableTab extends StatelessWidget {
               _buildTableRow('Св. 4,40 до 5,10', '110', '165', '245'),
             ],
           ),
-          const SizedBox(height: 20), // Дополнительный отступ снизу
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -361,9 +384,6 @@ class ZincDensityTableTab extends StatelessWidget {
     );
   }
 }
-
-// Остальные классы (RouteCalculationScreen, LinearRouteScreen, ZincCalculationScreen)
-// остаются без изменений, как в предыдущем коде
 
 class RouteCalculationScreen extends StatefulWidget {
   const RouteCalculationScreen({super.key});
@@ -983,7 +1003,6 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
 
   double? _getZincValueForDiameter(double diameter, String group) {
     for (var row in _zincTable) {
-      final range = row['range'] as String;
       final min = row['min'] as double;
       final max = row['max'] as double;
 
@@ -1053,6 +1072,8 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Расчёт цинка на заготовке')),
       body: Column(
@@ -1095,9 +1116,13 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                           onPressed: () => setState(() => _selectedGroup = 'C'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                _selectedGroup == 'C' ? Colors.blue : null,
+                                _selectedGroup == 'C'
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
                             foregroundColor:
-                                _selectedGroup == 'C' ? Colors.white : null,
+                                _selectedGroup == 'C'
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : null,
                           ),
                           child: const Text('С'),
                         ),
@@ -1105,9 +1130,13 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                           onPressed: () => setState(() => _selectedGroup = 'Ж'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                _selectedGroup == 'Ж' ? Colors.blue : null,
+                                _selectedGroup == 'Ж'
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
                             foregroundColor:
-                                _selectedGroup == 'Ж' ? Colors.white : null,
+                                _selectedGroup == 'Ж'
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : null,
                           ),
                           child: const Text('Ж'),
                         ),
@@ -1116,9 +1145,13 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                               () => setState(() => _selectedGroup = 'ОЖ'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                _selectedGroup == 'ОЖ' ? Colors.blue : null,
+                                _selectedGroup == 'ОЖ'
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
                             foregroundColor:
-                                _selectedGroup == 'ОЖ' ? Colors.white : null,
+                                _selectedGroup == 'ОЖ'
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : null,
                           ),
                           child: const Text('ОЖ'),
                         ),
@@ -1149,13 +1182,14 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.red[50],
+                          color: Theme.of(context).colorScheme.errorContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           _errorMessage,
-                          style: const TextStyle(
-                            color: Colors.red,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -1166,34 +1200,38 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                         margin: const EdgeInsets.only(top: 20),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.blue[50],
+                          color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    const SizedBox(
-                      height: 20,
-                    ), // Добавлен отступ перед пояснением
+                    const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor,
+                        ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
                         'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                           fontStyle: FontStyle.italic,
                         ),
                         textAlign: TextAlign.center,
