@@ -7,142 +7,6 @@ void main() {
   runApp(const WireDrawingApp());
 }
 
-class VersionChecker {
-  static const String minSupportedVersion = '1.0.2';
-  static const String minSupportedBuildNumber = '3';
-  static const String appStoreUrl =
-      'https://apps.rustore.ru/app/com.example.wire_drawing_calc';
-
-  static Future<bool> isUpdateRequired() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    final currentVersion = packageInfo.version;
-    final currentBuildNumber = packageInfo.buildNumber;
-
-    // Проверяем, является ли текущая версия 1.0.1+2
-    final bool isOldVersion =
-        currentVersion == '1.0.1' && currentBuildNumber == '2';
-
-    // Или проверяем, что версия меньше минимальной поддерживаемой
-    final bool isVersionLower =
-        _compareVersions(currentVersion, minSupportedVersion) < 0 ||
-        (currentVersion == minSupportedVersion &&
-            _compareBuildNumbers(currentBuildNumber, minSupportedBuildNumber) <
-                0);
-
-    return isOldVersion || isVersionLower;
-  }
-
-  // Сравнение версий вида X.Y.Z
-  static int _compareVersions(String v1, String v2) {
-    final v1Parts = v1.split('.').map(int.parse).toList();
-    final v2Parts = v2.split('.').map(int.parse).toList();
-
-    for (int i = 0; i < v1Parts.length; i++) {
-      if (v1Parts[i] > v2Parts[i]) return 1;
-      if (v1Parts[i] < v2Parts[i]) return -1;
-    }
-    return 0;
-  }
-
-  // Сравнение build numbers
-  static int _compareBuildNumbers(String b1, String b2) {
-    return int.parse(b1).compareTo(int.parse(b2));
-  }
-
-  static Future<void> showUpdateDialog(BuildContext context) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Требуется обновление'),
-          content: const Text(
-            'Для продолжения работы приложения необходимо обновить его до последней версии.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Обновить'),
-              onPressed: () async {
-                if (await canLaunch(appStoreUrl)) {
-                  await launch(appStoreUrl);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class AppStartupScreen extends StatefulWidget {
-  const AppStartupScreen({super.key});
-
-  @override
-  State<AppStartupScreen> createState() => _AppStartupScreenState();
-}
-
-class _AppStartupScreenState extends State<AppStartupScreen> {
-  bool _isChecking = true;
-  bool _updateRequired = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkVersion();
-  }
-
-  Future<void> _checkVersion() async {
-    try {
-      final isUpdateRequired = await VersionChecker.isUpdateRequired();
-
-      if (mounted) {
-        setState(() {
-          _isChecking = false;
-          _updateRequired = isUpdateRequired;
-        });
-
-        if (isUpdateRequired) {
-          await VersionChecker.showUpdateDialog(context);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isChecking = false;
-          _updateRequired = true;
-        });
-        await VersionChecker.showUpdateDialog(context);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_updateRequired) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('Требуется обновление приложения'),
-              ElevatedButton(
-                onPressed: () => VersionChecker.showUpdateDialog(context),
-                child: const Text('Обновить'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return _isChecking
-        ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-        : const HomeScreen();
-  }
-}
-
-// Остальной код остается без изменений...
 class WireDrawingApp extends StatelessWidget {
   const WireDrawingApp({super.key});
 
@@ -150,76 +14,356 @@ class WireDrawingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Калькулятор волочения',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const AppStartupScreen(),
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _darkMode = false;
+
+  void _toggleDarkMode() {
+    setState(() {
+      _darkMode = !_darkMode;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Режимы расчёта')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const RouteCalculationScreen(),
+    return MaterialApp(
+      theme: _darkMode ? ThemeData.dark() : ThemeData.light(),
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Режимы расчёта')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RouteCalculationScreen(),
+                      ),
                     ),
-                  ),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 50),
-                padding: const EdgeInsets.all(16),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50),
+                  padding: const EdgeInsets.all(16),
+                ),
+                child: const Text('Расчёт маршрута'),
               ),
-              child: const Text('Расчёт маршрута'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LinearRouteScreen(),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LinearRouteScreen(),
+                      ),
                     ),
-                  ),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
-              child: const Text('Расчёт линейного маршрута'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ZincCalculationScreen(),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50),
+                ),
+                child: const Text('Расчёт линейного маршрута'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ZincCalculationScreen(),
+                      ),
                     ),
-                  ),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
-              child: const Text('Расчёт цинка на заготовке'),
-            ),
-          ],
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50),
+                ),
+                child: const Text('Расчёт цинка на заготовке'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReferenceScreen(),
+                      ),
+                    ),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50),
+                ),
+                child: const Text('Справка и формулы'),
+              ),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: const Padding(
-        padding: EdgeInsets.all(12),
-        child: Text(
-          'by DK and IB',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey, fontSize: 12),
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'by DK and IB',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              IconButton(
+                icon: Icon(_darkMode ? Icons.wb_sunny : Icons.nightlight_round),
+                onPressed: _toggleDarkMode,
+                color: Colors.grey,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+class ReferenceScreen extends StatelessWidget {
+  const ReferenceScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Справка и формулы'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Формулы и источники'),
+              Tab(text: 'Таблица плотности цинка'),
+            ],
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.only(bottom: 40), // Отступ снизу
+          child: const TabBarView(
+            children: [FormulasAndSourcesTab(), ZincDensityTableTab()],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FormulasAndSourcesTab extends StatelessWidget {
+  const FormulasAndSourcesTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFormulaCard(
+            title: '1. Обжатие (уменьшение площади сечения)',
+            formula: 'Обжатие (%) = [1 - (Dпосле/Dдо)^2] × 100',
+            source: 'Грудев А.П. "Теория волочения проволоки", 1989',
+          ),
+          const SizedBox(height: 16),
+          _buildFormulaCard(
+            title: '2. Расчет диаметра после обжатия',
+            formula: 'Dпосле = √(Dцель^2/(1 - Обжатие(%)/100))',
+            source: 'Третьяков А.В. "Механические свойства металлов", 1960',
+          ),
+          const SizedBox(height: 16),
+          _buildFormulaCard(
+            title: '3. Суммарное обжатие',
+            formula:
+                'Суммарное обжатие (%) = (Dзаготовка^2 - Dчистовой^2)/Dзаготовка^2 × 100',
+            source: 'Смирнов-Аляев Г.А. "Сопротивление материалов", 1968',
+          ),
+          const SizedBox(height: 16),
+          _buildFormulaCard(
+            title: '4. Единичное обжатие',
+            formula:
+                'Единичное обжатие (%) = [1 - ((100 - Сум.Обжат.)/100)^(1/N)] × 100\nгде N - число проходов',
+            source: 'Зиновьев В.А. "Технология волочения металлов", 1974',
+          ),
+          const SizedBox(height: 16),
+          _buildFormulaCard(
+            title: '5. ВСР заготовки',
+            formula: 'ВСРзагот = 100 × Углерод (С) + 53 - Dзаготовка ± 5',
+            source: 'Рудман Л.И. "Технология производства проволоки", 1982',
+          ),
+          const SizedBox(height: 16),
+          _buildFormulaCard(
+            title: '6. ВСР готовой проволоки',
+            formula:
+                'ВСРготов = ВСРзагот + [0.6 × (Углерод + Dзаг/40 + 0.01 × Сум.Обжат.) × Сум.Обжат.] / [log10(√(100 - Сум.Обжат.)) + 0.0005 × Сум.Обжат.]',
+            source: 'Рудман Л.И. "Технология производства проволоки", 1982',
+          ),
+          const SizedBox(height: 16),
+          _buildFormulaCard(
+            title: '7. Формула расчёта цинка на заготовке',
+            formula:
+                'Цинк на заготовке (г/м²) = (D_заг / D_кон) × P_кон × K\n\nГде:\n- D_заг — диаметр заготовки (мм),\n- D_кон — диаметр готовой проволоки (мм),\n- P_кон — норма цинка для конечного диаметра (г/м², по ГОСТ 7372-79, табл. 7),\n- K — поправочный коэффициент:\n  • 1.1 для групп С и Ж,\n  • 1.2–1.3 для группы ОЖ.',
+            source:
+                'Гуляев А.П. Технология волочения металлов. — М.: Металлургия, 1986',
+          ),
+          const SizedBox(height: 20), // Дополнительный отступ снизу
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormulaCard({
+    required String title,
+    required String formula,
+    required String source,
+  }) {
+    return Card(
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              formula,
+              style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Источник: $source',
+              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ZincDensityTableTab extends StatelessWidget {
+  const ZincDensityTableTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const Text(
+            'ГОСТ 7372-79, таб. №7',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Table(
+            border: TableBorder.all(),
+            columnWidths: const {
+              0: FixedColumnWidth(100),
+              1: FixedColumnWidth(80),
+              2: FixedColumnWidth(80),
+              3: FixedColumnWidth(80),
+            },
+            children: [
+              const TableRow(
+                decoration: BoxDecoration(color: Colors.blueGrey),
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text(
+                      'Номинальный диаметр, мм',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text(
+                      'С',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text(
+                      'Ж',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text(
+                      'ОЖ',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+              _buildTableRow('0,18', '10', '20', '30'),
+              _buildTableRow('От 0,20 до 0,24 включ.', '15', '20', '30'),
+              _buildTableRow('Св. 0,24 до 0,32', '20', '25', '45'),
+              _buildTableRow('Св. 0,32 до 0,38', '20', '25', '60'),
+              _buildTableRow('Св. 0,38 до 0,45', '30', '40', '75'),
+              _buildTableRow('Св. 0,45 до 0,55', '35', '40', '90'),
+              _buildTableRow('Св. 0,55 до 0,65', '40', '50', '110'),
+              _buildTableRow('Св. 0,65 до 0,75', '40', '50', '120'),
+              _buildTableRow('Св. 0,75 до 0,95', '50', '70', '130'),
+              _buildTableRow('Св. 0,95 до 1,15', '60', '80', '150'),
+              _buildTableRow('Св. 1,15 до 1,40', '60', '90', '165'),
+              _buildTableRow('Св. 1,40 до 1,80', '70', '100', '180'),
+              _buildTableRow('Св. 1,80 до 2,40', '80', '110', '205'),
+              _buildTableRow('Св. 2,40 до 3,00', '90', '125', '230'),
+              _buildTableRow('Св. 3,00 до 3,80', '100', '135', '230'),
+              _buildTableRow('Св. 3,80 до 4,40', '110', '150', '245'),
+              _buildTableRow('Св. 4,40 до 5,10', '110', '165', '245'),
+            ],
+          ),
+          const SizedBox(height: 20), // Дополнительный отступ снизу
+        ],
+      ),
+    );
+  }
+
+  TableRow _buildTableRow(String diameter, String c, String zh, String ozh) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(diameter, textAlign: TextAlign.center),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(c, textAlign: TextAlign.center),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(zh, textAlign: TextAlign.center),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(ozh, textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+}
+
+// Остальные классы (RouteCalculationScreen, LinearRouteScreen, ZincCalculationScreen)
+// остаются без изменений, как в предыдущем коде
 
 class RouteCalculationScreen extends StatefulWidget {
   const RouteCalculationScreen({super.key});
@@ -1035,24 +1179,29 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                           textAlign: TextAlign.center,
                         ),
                       ),
+                    const SizedBox(
+                      height: 20,
+                    ), // Добавлен отступ перед пояснением
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
+                        'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: Colors.grey[200],
-            child: const Text(
-              'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
-              'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
             ),
           ),
         ],
