@@ -18,7 +18,6 @@ class _WireDrawingAppState extends State<WireDrawingApp> {
   @override
   void initState() {
     super.initState();
-    // Определяем текущую тему устройства при запуске
     _darkMode =
         WidgetsBinding.instance.window.platformBrightness == Brightness.dark;
   }
@@ -33,7 +32,17 @@ class _WireDrawingAppState extends State<WireDrawingApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Калькулятор волочения',
-      theme: _darkMode ? ThemeData.dark() : ThemeData.light(),
+      theme: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.light(surface: Colors.white),
+      ),
+      darkTheme: ThemeData.dark().copyWith(
+        textTheme: ThemeData.dark().textTheme.apply(
+          bodyColor: Colors.grey[300],
+          displayColor: Colors.grey[300],
+        ),
+      ),
+      themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
       home: HomeScreen(darkMode: _darkMode, toggleDarkMode: _toggleDarkMode),
       debugShowCheckedModeBanner: false,
     );
@@ -52,96 +61,183 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Режимы расчёта')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RouteCalculationScreen(),
-                    ),
+      body: Column(
+        children: [
+          const SizedBox(height: 44),
+          SizedBox(
+            height: screenHeight * 0.3,
+            width: double.infinity,
+            child: Image.asset(
+              'assets/background.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.blueGrey,
+                  child: const Center(
+                    child: Icon(Icons.image, size: 50, color: Colors.white),
                   ),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 50),
-                padding: const EdgeInsets.all(16),
+                );
+              },
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: screenHeight * 0.04,
+              bottom: screenHeight * 0.03,
+              left: screenWidth * 0.07,
+            ),
+            child: Text(
+              'Выберите\nрежим расчёта',
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: screenHeight * 0.03,
+                fontWeight: FontWeight.w800,
+                color: darkMode ? Colors.grey[300] : const Color(0xFF1F2024),
+                height: 1.2,
+                letterSpacing: -0.5,
               ),
-              child: const Text('Расчёт маршрута'),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.05,
+                vertical: screenHeight * 0.01,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _buildMenuButton(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => LinearRouteScreen(),
+                    'Расчёт маршрута',
+                    const RouteCalculationScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  _buildMenuButton(
+                    context,
+                    'Расчёт линейного маршрута',
+                    const LinearRouteScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  _buildMenuButton(
+                    context,
+                    'Расчёт цинка на заготовке',
+                    const ZincCalculationScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  _buildMenuButton(
+                    context,
+                    'Справка и формулы',
+                    const ReferenceScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: screenHeight * 0.025,
+              left: screenWidth * 0.06,
+              right: screenWidth * 0.04,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'by DK and IB',
+                  style: TextStyle(
+                    color:
+                        darkMode
+                            ? Colors.white.withOpacity(0.9)
+                            : Colors.black.withOpacity(0.9),
+                    fontSize: screenHeight * 0.018,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: darkMode ? Colors.amber : Colors.black,
+                      width: 1.0,
                     ),
                   ),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
-              child: const Text('Расчёт линейного маршрута'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ZincCalculationScreen(),
+                  child: IconButton(
+                    onPressed: toggleDarkMode,
+                    iconSize: screenHeight * 0.029,
+                    icon: Icon(
+                      darkMode ? Icons.wb_sunny : Icons.nightlight_round,
+                      color: darkMode ? Colors.amber : Colors.black,
                     ),
                   ),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
-              child: const Text('Расчёт цинка на заготовке'),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ReferenceScreen()),
-                  ),
-              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 50)),
-              child: const Text('Справка и формулы'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.only(top: 12, bottom: 24),
+    );
+  }
+
+  Widget _buildMenuButton(
+    BuildContext context,
+    String text,
+    Widget screen, {
+    required double buttonHeight,
+    double fontSize = 16,
+    double frameWidth = 1.4,
+    FontWeight fontWeight = FontWeight.w400,
+  }) {
+    return SizedBox(
+      height: buttonHeight,
+      child: ElevatedButton(
+        onPressed:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => screen),
+            ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+          padding: EdgeInsets.symmetric(
+            vertical: buttonHeight * 0.15,
+            horizontal: MediaQuery.of(context).size.width * 0.05,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: darkMode ? Colors.grey[700]! : const Color(0xFFD4D6DD),
+              width: frameWidth,
+            ),
+          ),
+          elevation: 0,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 16),
-              child: Text(
-                'by DK and IB',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+            Text(
+              text,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: fontSize,
+                fontWeight: fontWeight,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: InkWell(
-                onTap: toggleDarkMode,
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).cardColor,
-                    border: Border.all(color: Colors.grey, width: 1),
-                  ),
-                  child: Icon(
-                    darkMode ? Icons.wb_sunny : Icons.nightlight_round,
-                    color: darkMode ? Colors.amber : Colors.black,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
+            const Icon(Icons.chevron_right),
           ],
         ),
       ),
@@ -166,9 +262,9 @@ class ReferenceScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.only(bottom: 60),
-          child: const TabBarView(
+        body: const Padding(
+          padding: EdgeInsets.only(bottom: 60),
+          child: TabBarView(
             children: [FormulasAndSourcesTab(), ZincDensityTableTab()],
           ),
         ),

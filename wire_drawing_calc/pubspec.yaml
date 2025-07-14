@@ -2,7 +2,7 @@ name: wire_drawing_calc
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 2.0.0+8
+version: 3.0.0+10
 
 environment:
   sdk: '>=3.7.2 <4.0.0'
@@ -27,3 +27,12 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/background.jpg
+    - assets/fonts/Inter-ExtraBold.otf  # Добавляем шрифт в assets
+  
+  fonts:  # Только ОДИН раздел fonts
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-ExtraBold.otf
+          weight: 800
