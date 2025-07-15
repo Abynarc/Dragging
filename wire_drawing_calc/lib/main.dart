@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'dart:math' as math;
 
 void main() {
   runApp(const WireDrawingApp());
@@ -495,6 +496,70 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   );
   final List<double> _reductions = List.filled(15, 0);
 
+  // Настройки размеров (адаптивные)
+  double get blockWidth => MediaQuery.of(context).size.width * 0.9;
+  double get blockPadding => 12.0;
+  double get blockSpacing => 12.0;
+
+  // Шрифты
+  static const double workpieceFontSize = 18.0;
+  static const FontWeight workpieceFontWeight = FontWeight.normal;
+  static const double blockTitleFontSize = 16.0;
+  static const double inputFontSize = 16.0; // Общий размер для всех полей ввода
+  static const double reductionFontSize = 17.0;
+
+  // Размеры полей (адаптивные)
+  double get workpieceInputWidth => blockWidth * 0.35;
+  double get blockInputWidth => blockWidth * 0.45;
+  double get underlineWidth =>
+      blockWidth * 0.45; // Подчеркивание пропорционально
+
+  // Границы
+  static const Color blockBorderColor = Color.fromARGB(255, 212, 214, 221);
+  static const double blockBorderWidth = 1.5;
+  static const double blockBorderRadius = 15.0;
+
+  // Подчеркивание
+  static const Color underlineColor = Color.fromARGB(255, 212, 214, 221);
+  static const double underlineHeight = 1.5;
+
+  // Цвета
+  static const Color lightWorkpieceTitleColor = Colors.black;
+  static const Color lightInputTextColor = Color(
+    0xFF6000AB,
+  ); // Общий цвет для ввода
+  static const Color lightBlockTitleColor = Colors.black;
+  static const Color lightReductionColor = Color(0xFF6000AB);
+
+  static const Color darkWorkpieceTitleColor = Colors.white;
+  static const Color darkInputTextColor = Colors.white;
+  static const Color darkBlockTitleColor = Colors.white;
+  static const Color darkReductionColor = Color.fromARGB(255, 166, 49, 255);
+
+  // AppBar
+  static const double appBarTitleSpacing = 10.0;
+  static const Color appBarColorLight = Colors.white;
+  static const Color appBarColorDark = Color(0xFF121212);
+  static const Color appBarTextColorLight = Colors.black;
+  static const Color appBarTextColorDark = Colors.white;
+  static const Color appBarIconColorLight = Colors.black;
+  static const Color appBarIconColorDark = Colors.white;
+
+  // Стиль ввода (общий для всех полей)
+  TextStyle getInputTextStyle(bool isDarkMode) => TextStyle(
+    fontSize: inputFontSize,
+    color: isDarkMode ? darkInputTextColor : lightInputTextColor,
+    fontWeight: FontWeight.bold,
+  );
+
+  // Стиль подсказки
+  TextStyle getHintTextStyle(bool isDarkMode) => TextStyle(
+    fontWeight: FontWeight.normal,
+    color: (isDarkMode ? darkInputTextColor : lightInputTextColor).withOpacity(
+      0.5,
+    ),
+  );
+
   double _parseInput(String value) {
     return double.tryParse(value.replaceAll(',', '.')) ?? 0;
   }
@@ -510,7 +575,7 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
           continue;
         }
 
-        _reductions[i - 1] = (1 - pow(next / prev, 2)) * 100;
+        _reductions[i - 1] = (1 - math.pow(next / prev, 2)) * 100;
       }
       setState(() {});
     } catch (e) {
@@ -530,48 +595,183 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Цвета для AppBar
+    final Color appBarColor = isDarkMode ? appBarColorDark : appBarColorLight;
+    final Color appBarTextColor =
+        isDarkMode ? appBarTextColorDark : appBarTextColorLight;
+    final Color appBarIconColor =
+        isDarkMode ? appBarIconColorDark : appBarIconColorLight;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Расчёт маршрута')),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            for (int i = 0; i < 16; i++) ...[
-              ListTile(
-                title: Text(i == 0 ? 'Заготовка' : 'Блок $i'),
-                trailing: SizedBox(
-                  width: 100,
-                  child: TextField(
-                    controller: _diameterControllers[i],
-                    keyboardType: TextInputType.numberWithOptions(
-                      decimal: true,
+      appBar: AppBar(
+        title: const Text('Расчёт маршрута'),
+        titleSpacing: appBarTitleSpacing,
+        backgroundColor: appBarColor,
+        foregroundColor: appBarIconColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleTextStyle: TextStyle(
+          color: appBarTextColor,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: constraints.maxWidth > 600 ? 24.0 : 16.0,
+              vertical: 16.0,
+            ),
+            child: Center(
+              child: SizedBox(
+                width: blockWidth,
+                child: Column(
+                  children: [
+                    // Заготовка
+                    Padding(
+                      padding: EdgeInsets.all(blockPadding),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Заготовка',
+                            style: TextStyle(
+                              fontSize: workpieceFontSize,
+                              color:
+                                  isDarkMode
+                                      ? darkWorkpieceTitleColor
+                                      : lightWorkpieceTitleColor,
+                              fontWeight: workpieceFontWeight,
+                            ),
+                          ),
+                          SizedBox(
+                            width: workpieceInputWidth,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                TextField(
+                                  controller: _diameterControllers[0],
+                                  textAlign: TextAlign.right,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  style: getInputTextStyle(isDarkMode),
+                                  decoration: InputDecoration(
+                                    hintText: 'Диаметр',
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                    hintStyle: getHintTextStyle(isDarkMode),
+                                  ),
+                                  onChanged: (value) => _calculateReductions(),
+                                ),
+                                Container(
+                                  height: underlineHeight,
+                                  width: underlineWidth,
+                                  color: underlineColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    decoration: InputDecoration(
-                      hintText: i == 0 ? 'Диаметр' : 'Блок $i',
-                    ),
-                    onChanged: (value) => _calculateReductions(),
-                  ),
-                ),
-              ),
-              if (i > 0)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Обжатие: ${_reductions[i - 1].toStringAsFixed(2)}%',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
+                    SizedBox(height: blockSpacing),
+
+                    // Блоки 1-15
+                    for (int i = 1; i < 16; i++) ...[
+                      Container(
+                        padding: EdgeInsets.all(blockPadding),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: blockBorderColor,
+                            width: blockBorderWidth,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            blockBorderRadius,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Блок $i',
+                                  style: TextStyle(
+                                    fontSize: blockTitleFontSize,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        isDarkMode
+                                            ? darkBlockTitleColor
+                                            : lightBlockTitleColor,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: blockInputWidth,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      TextField(
+                                        controller: _diameterControllers[i],
+                                        textAlign: TextAlign.right,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: getInputTextStyle(isDarkMode),
+                                        decoration: InputDecoration(
+                                          hintText: 'Введите значение',
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                          hintStyle: getHintTextStyle(
+                                            isDarkMode,
+                                          ),
+                                        ),
+                                        onChanged:
+                                            (value) => _calculateReductions(),
+                                      ),
+                                      Container(
+                                        height: underlineHeight,
+                                        width: underlineWidth,
+                                        color: underlineColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  'Обжатие: ${_reductions[i - 1].toStringAsFixed(2)}%',
+                                  style: TextStyle(
+                                    fontSize: reductionFontSize,
+                                    color:
+                                        isDarkMode
+                                            ? darkReductionColor
+                                            : lightReductionColor,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      if (i < 15) SizedBox(height: blockSpacing),
                     ],
-                  ),
+                  ],
                 ),
-              if (i < 15) const Divider(),
-            ],
-          ],
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
