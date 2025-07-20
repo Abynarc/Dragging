@@ -1427,6 +1427,8 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   String? _selectedGroup;
   double _result = 0;
   String _errorMessage = '';
+  final FocusNode _rawFocusNode = FocusNode();
+  final FocusNode _finalFocusNode = FocusNode();
 
   final List<Map<String, dynamic>> _zincTable = [
     {'range': 'D = 0,18', 'min': 0.18, 'max': 0.18, 'C': 10, 'Ж': 20, 'ОЖ': 30},
@@ -1561,9 +1563,18 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _rawFocusNode.addListener(() => setState(() {}));
+    _finalFocusNode.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _diameterRawController.dispose();
     _diameterFinalController.dispose();
+    _rawFocusNode.dispose();
+    _finalFocusNode.dispose();
     super.dispose();
   }
 
@@ -1643,176 +1654,442 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final borderColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Расчёт цинка на заготовке')),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: _diameterRawController,
-                      decoration: const InputDecoration(
-                        labelText: 'Диаметр заготовки (мм)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _diameterFinalController,
-                      decoration: const InputDecoration(
-                        labelText: 'Диаметр готовой проволоки (мм)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text('Группа цинка:', style: TextStyle(fontSize: 16)),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () => setState(() => _selectedGroup = 'C'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                _selectedGroup == 'C'
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
-                            foregroundColor:
-                                _selectedGroup == 'C'
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : null,
-                          ),
-                          child: const Text('С'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => setState(() => _selectedGroup = 'Ж'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                _selectedGroup == 'Ж'
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
-                            foregroundColor:
-                                _selectedGroup == 'Ж'
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : null,
-                          ),
-                          child: const Text('Ж'),
-                        ),
-                        ElevatedButton(
-                          onPressed:
-                              () => setState(() => _selectedGroup = 'ОЖ'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                _selectedGroup == 'ОЖ'
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
-                            foregroundColor:
-                                _selectedGroup == 'ОЖ'
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : null,
-                          ),
-                          child: const Text('ОЖ'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 30),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton(
-                          onPressed: _reset,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(120, 50),
-                          ),
-                          child: const Text('Сброс'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _calculate,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(120, 50),
-                          ),
-                          child: const Text('Рассчитать'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    if (_errorMessage.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _errorMessage,
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onErrorContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    if (_result > 0)
-                      Container(
-                        margin: const EdgeInsets.only(top: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(context).dividerColor,
-                        ),
-                      ),
-                      child: Text(
-                        'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
-                        'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
+    // Настройки для информационного блока
+    final infoBackgroundColor =
+        isDarkMode
+            ? const Color(0xFF2D2D2D).withOpacity(0.8)
+            : const Color(0xFFF2EBF8);
+    final infoTextColor =
+        isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black;
+
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Расчёт цинка на заготовке')),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _diameterRawController,
+                        focusNode: _rawFocusNode,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                          fontStyle: FontStyle.italic,
+                          color: isDarkMode ? Colors.white : Colors.black,
                         ),
-                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          hintText:
+                              _rawFocusNode.hasFocus ? '' : 'D Заготовки (мм)',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          labelText: 'D Заготовки (мм)',
+                          labelStyle: TextStyle(color: const Color(0xFF6000AB)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: borderColor!,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6000AB),
+                              width: 2,
+                            ),
+                          ),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          floatingLabelStyle: TextStyle(
+                            color: const Color(0xFF6000AB),
+                          ),
+                        ),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _diameterFinalController,
+                        focusNode: _finalFocusNode,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              _finalFocusNode.hasFocus
+                                  ? ''
+                                  : 'D готовой проволоки (мм)',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          labelText: 'D готовой проволоки (мм)',
+                          labelStyle: TextStyle(color: const Color(0xFF6000AB)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6000AB),
+                              width: 2,
+                            ),
+                          ),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          floatingLabelStyle: TextStyle(
+                            color: const Color(0xFF6000AB),
+                          ),
+                        ),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Группа цинка:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color:
+                                isDarkMode
+                                    ? const Color(0xFF6000AB)
+                                    : Colors.grey,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Material(
+                                color:
+                                    _selectedGroup == 'C'
+                                        ? const Color(0x666000AB)
+                                        : Colors.transparent,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(7),
+                                  bottomLeft: Radius.circular(7),
+                                ),
+                                child: InkWell(
+                                  onTap:
+                                      () =>
+                                          setState(() => _selectedGroup = 'C'),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(7),
+                                    bottomLeft: Radius.circular(7),
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border:
+                                          _selectedGroup == 'C'
+                                              ? Border.all(
+                                                color: const Color(0xFF6000AB),
+                                                width: 2,
+                                              )
+                                              : Border.all(
+                                                color: Colors.transparent,
+                                              ),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(7),
+                                        bottomLeft: Radius.circular(7),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'С',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              _selectedGroup == 'C'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                          color:
+                                              _selectedGroup == 'C'
+                                                  ? Colors.white
+                                                  : (isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color:
+                                  isDarkMode
+                                      ? const Color(0xFF6000AB)
+                                      : Colors.grey,
+                            ),
+                            Expanded(
+                              child: Material(
+                                color:
+                                    _selectedGroup == 'Ж'
+                                        ? const Color(0x666000AB)
+                                        : Colors.transparent,
+                                child: InkWell(
+                                  onTap:
+                                      () =>
+                                          setState(() => _selectedGroup = 'Ж'),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border:
+                                          _selectedGroup == 'Ж'
+                                              ? Border.all(
+                                                color: const Color(0xFF6000AB),
+                                                width: 2,
+                                              )
+                                              : Border.all(
+                                                color: Colors.transparent,
+                                              ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Ж',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              _selectedGroup == 'Ж'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                          color:
+                                              _selectedGroup == 'Ж'
+                                                  ? Colors.white
+                                                  : (isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color:
+                                  isDarkMode
+                                      ? const Color(0xFF6000AB)
+                                      : Colors.grey,
+                            ),
+                            Expanded(
+                              child: Material(
+                                color:
+                                    _selectedGroup == 'ОЖ'
+                                        ? const Color(0x666000AB)
+                                        : Colors.transparent,
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(7),
+                                  bottomRight: Radius.circular(7),
+                                ),
+                                child: InkWell(
+                                  onTap:
+                                      () =>
+                                          setState(() => _selectedGroup = 'ОЖ'),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(7),
+                                    bottomRight: Radius.circular(7),
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border:
+                                          _selectedGroup == 'ОЖ'
+                                              ? Border.all(
+                                                color: const Color(0xFF6000AB),
+                                                width: 2,
+                                              )
+                                              : Border.all(
+                                                color: Colors.transparent,
+                                              ),
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(7),
+                                        bottomRight: Radius.circular(7),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'ОЖ',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              _selectedGroup == 'ОЖ'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                          color:
+                                              _selectedGroup == 'ОЖ'
+                                                  ? Colors.white
+                                                  : (isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SizedBox(
+                            width: 180,
+                            height: 50,
+                            child: OutlinedButton(
+                              onPressed: _reset,
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color:
+                                      isDarkMode ? Colors.white : Colors.black,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                foregroundColor:
+                                    isDarkMode ? Colors.white : Colors.black,
+                              ),
+                              child: const Text('Сброс'),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 180,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _calculate,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6000AB),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                                shadowColor: Colors.transparent,
+                              ),
+                              child: const Text(
+                                'Рассчитать',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: 2,
+                                      color: Colors.black26,
+                                      offset: Offset(1, 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      if (_errorMessage.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      if (_result > 0) ...[
+                        const Padding(
+                          padding: EdgeInsets.only(top: 20, left: 8, right: 8),
+                          child: Text(
+                            'Результат',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6000AB),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: infoBackgroundColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
+                'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: infoTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
