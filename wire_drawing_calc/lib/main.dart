@@ -800,6 +800,12 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
   List<TextEditingController> _diameterControllers = [];
   List<double> _reductions = [];
 
+  final FocusNode _diameterRawFocus = FocusNode();
+  final FocusNode _diameterFinalFocus = FocusNode();
+  final FocusNode _passesFocus = FocusNode();
+  final FocusNode _carbonFocus = FocusNode();
+  List<FocusNode> _diameterFocusNodes = [];
+
   @override
   void dispose() {
     _diameterRaw.dispose();
@@ -808,6 +814,13 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
     _carbon.dispose();
     for (var controller in _diameterControllers) {
       controller.dispose();
+    }
+    _diameterRawFocus.dispose();
+    _diameterFinalFocus.dispose();
+    _passesFocus.dispose();
+    _carbonFocus.dispose();
+    for (var focusNode in _diameterFocusNodes) {
+      focusNode.dispose();
     }
     super.dispose();
   }
@@ -833,6 +846,12 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
     _vsrRaw2 = 0;
     _vsrFinal1 = 0;
     _vsrFinal2 = 0;
+
+    for (var focusNode in _diameterFocusNodes) {
+      focusNode.dispose();
+    }
+    _diameterFocusNodes.clear();
+
     setState(() {});
   }
 
@@ -846,7 +865,7 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
         continue;
       }
 
-      _reductions[i - 1] = (1 - pow(next / prev, 2)) * 100;
+      _reductions[i - 1] = (1 - math.pow(next / prev, 2)) * 100;
     }
     setState(() {});
   }
@@ -865,16 +884,17 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
         throw Exception('Чистовой диаметр должен быть меньше заготовки');
       }
 
-      _totalReduction = (1 - pow(dFinal / dRaw, 2)) * 100;
+      _totalReduction = (1 - math.pow(dFinal / dRaw, 2)) * 100;
       _unitReduction =
-          (1 - pow((100 - _totalReduction) / 100, 1 / passes)) * 100;
+          (1 - math.pow((100 - _totalReduction) / 100, 1 / passes)) * 100;
       _vsrRaw1 = 100 * carbon + 53 - dRaw - 5;
       _vsrRaw2 = 100 * carbon + 53 - dRaw + 5;
 
       final commonPart =
           0.6 * (carbon + dRaw / 40 + 0.01 * _unitReduction) * _totalReduction;
       final denominator =
-          log(sqrt(100 - _totalReduction)) / log(10) + 0.0005 * _totalReduction;
+          math.log(math.sqrt(100 - _totalReduction)) / math.log(10) +
+          0.0005 * _totalReduction;
 
       _vsrFinal1 = _vsrRaw1 + (denominator != 0 ? commonPart / denominator : 0);
       _vsrFinal2 = _vsrRaw2 + (denominator != 0 ? commonPart / denominator : 0);
@@ -884,12 +904,13 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
         (_) => TextEditingController(),
       );
       _reductions = List.filled(passes, 0);
+      _diameterFocusNodes = List.generate(passes + 1, (_) => FocusNode());
 
       double currentDiameter = dRaw;
       for (int i = 0; i <= passes; i++) {
         _diameterControllers[i].text = currentDiameter.toStringAsFixed(2);
         if (i < passes) {
-          currentDiameter *= sqrt(1 - _unitReduction / 100);
+          currentDiameter *= math.sqrt(1 - _unitReduction / 100);
         }
       }
       _diameterControllers[passes].text = dFinal.toStringAsFixed(2);
@@ -910,230 +931,483 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
     return input.replaceAll(',', '.');
   }
 
+  Widget _buildResultRow(
+    String title,
+    String value,
+    Color titleColor,
+    Color valueColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: TextStyle(fontSize: 16, color: titleColor)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoubleResultRow(
+    String title,
+    String value1,
+    String value2,
+    Color titleColor,
+    Color valueColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: TextStyle(fontSize: 16, color: titleColor)),
+          Row(
+            children: [
+              Text(
+                value1,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: valueColor,
+                ),
+              ),
+              Text(' - ', style: TextStyle(fontSize: 16, color: valueColor)),
+              Text(
+                value2,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: valueColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkTheme ? Colors.white : Colors.black;
+    final borderColor = isDarkTheme ? Colors.grey[600]! : Colors.grey[400]!;
+    final focusedBorderColor =
+        isDarkTheme ? const Color(0xFF6000AB) : const Color(0xFF6000AB);
+    final labelColor = isDarkTheme ? Colors.grey[400]! : Colors.grey[600]!;
+    final resultTitleColor =
+        isDarkTheme ? Colors.grey[400]! : Colors.grey[600]!;
+    final tableHeaderColor =
+        isDarkTheme ? Colors.grey[900]! : const Color(0xFF6000AB);
+
+    final inputDecoration = InputDecoration(
+      labelStyle: TextStyle(color: labelColor),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(color: borderColor, width: 1.0),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.0),
+        borderSide: BorderSide(color: borderColor, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.0),
+        borderSide: BorderSide(color: focusedBorderColor, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 14.0,
+      ),
+    );
+
+    final buttonPadding = MaterialStateProperty.all<EdgeInsetsGeometry>(
+      const EdgeInsets.symmetric(horizontal: 14.0, vertical: 16.0),
+    );
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Линейный маршрут')),
+      appBar: AppBar(
+        title: const Text('Линейный маршрут'),
+        backgroundColor:
+            isDarkTheme
+                ? Theme.of(context).scaffoldBackgroundColor
+                : Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDarkTheme ? Colors.white : Colors.black,
+        ),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _diameterRaw,
-                      decoration: const InputDecoration(
-                        labelText: 'D Заготовки (мм)',
-                        border: OutlineInputBorder(),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        right: 8.0,
+                        bottom: 16.0,
+                        top: 30.0,
                       ),
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: true,
+                      child: TextField(
+                        controller: _diameterRaw,
+                        focusNode: _diameterRawFocus,
+                        decoration: inputDecoration.copyWith(
+                          labelText: 'D Загот. (мм)',
+                        ),
+                        style: TextStyle(color: textColor),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
                   Expanded(
-                    child: TextField(
-                      controller: _diameterFinal,
-                      decoration: const InputDecoration(
-                        labelText: 'D Чистовой (мм)',
-                        border: OutlineInputBorder(),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 8.0,
+                        bottom: 16.0,
+                        top: 30.0,
                       ),
-                      keyboardType: TextInputType.numberWithOptions(
-                        decimal: true,
+                      child: TextField(
+                        controller: _diameterFinal,
+                        focusNode: _diameterFinalFocus,
+                        decoration: inputDecoration.copyWith(
+                          labelText: 'D Чист. (мм)',
+                        ),
+                        style: TextStyle(color: textColor),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passes,
-                decoration: const InputDecoration(
-                  labelText: 'Число проходов',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _carbon,
-                decoration: const InputDecoration(
-                  labelText: 'Углерод (С)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                onChanged: (value) {
-                  if (value.startsWith('.') || value.startsWith(',')) {
-                    _carbon.text = _formatCarbonInput(value);
-                    _carbon.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _carbon.text.length),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
+
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ElevatedButton(
-                    onPressed: _resetData,
-                    child: const Text('Сброс'),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        right: 8.0,
+                        bottom: 26.0,
+                        top: 12.0,
+                      ),
+                      child: TextField(
+                        controller: _passes,
+                        focusNode: _passesFocus,
+                        decoration: inputDecoration.copyWith(
+                          labelText: 'Число проходов',
+                        ),
+                        style: TextStyle(color: textColor),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: _calculate,
-                    child: const Text('Рассчитать'),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 8.0,
+                        bottom: 26.0,
+                        top: 12.0,
+                      ),
+                      child: TextField(
+                        controller: _carbon,
+                        focusNode: _carbonFocus,
+                        decoration: inputDecoration.copyWith(
+                          labelText: 'Углерод (С)',
+                        ),
+                        style: TextStyle(color: textColor),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onTap: () {
+                          if (_carbon.text.isEmpty) {
+                            _carbon.text = '0,';
+                            _carbon.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _carbon.text.length),
+                            );
+                          }
+                        },
+                        onChanged: (value) {
+                          if (value.startsWith('.') || value.startsWith(',')) {
+                            _carbon.text = _formatCarbonInput(value);
+                            _carbon.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _carbon.text.length),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
-              _buildResultRow(
-                'Суммарное обжатие',
-                '${_totalReduction.toStringAsFixed(2)} %',
-              ),
-              _buildResultRow(
-                'Единичное обжатие',
-                '${_unitReduction.toStringAsFixed(2)} %',
-              ),
-              _buildDoubleResultRow(
-                'ВСР (Заготовка)',
-                _vsrRaw1.toStringAsFixed(2),
-                _vsrRaw2.toStringAsFixed(2),
-              ),
-              _buildDoubleResultRow(
-                'ВСР (Готовый)',
-                _vsrFinal1.toStringAsFixed(2),
-                _vsrFinal2.toStringAsFixed(2),
-              ),
-              const SizedBox(height: 24),
-              if (_diameterControllers.isNotEmpty) ...[
-                const Text(
-                  'Маршрут волочения:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Table(
-                  border: TableBorder.all(color: Colors.grey),
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 60.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const TableRow(
-                      decoration: BoxDecoration(color: Colors.blueGrey),
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Text(
-                            'Этап',
-                            style: TextStyle(color: Colors.white),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.44,
+                      child: OutlinedButton(
+                        onPressed: _resetData,
+                        style: ButtonStyle(
+                          padding: buttonPadding,
+                          side: MaterialStateProperty.all<BorderSide>(
+                            BorderSide(
+                              color: isDarkTheme ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          shape: MaterialStateProperty.all<OutlinedBorder>(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14.0),
+                            ),
                           ),
                         ),
-                        Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Text(
-                            'Диаметр (мм)',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                        child: Text(
+                          'Сброс',
+                          style: TextStyle(color: textColor, fontSize: 17),
                         ),
-                        Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Text(
-                            'Обжатие (%)',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    ..._diameterControllers.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final controller = entry.value;
-                      return TableRow(
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.44,
+                      child: ElevatedButton(
+                        onPressed: _calculate,
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all<Color>(
+                            const Color(0xFF6000AB),
+                          ),
+                          padding: buttonPadding,
+                          shape: MaterialStateProperty.all<OutlinedBorder>(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14.0),
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Рассчитать',
+                          style: TextStyle(color: Colors.white, fontSize: 17),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, bottom: 30.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Результат',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildResultRow(
+                      'Суммарное обжатие',
+                      '${_totalReduction.toStringAsFixed(2)} %',
+                      resultTitleColor,
+                      textColor,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildResultRow(
+                      'Единичное обжатие',
+                      '${_unitReduction.toStringAsFixed(2)} %',
+                      resultTitleColor,
+                      textColor,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildDoubleResultRow(
+                      'BCP (Заготовка)',
+                      _vsrRaw1.toStringAsFixed(2),
+                      _vsrRaw2.toStringAsFixed(2),
+                      resultTitleColor,
+                      textColor,
+                    ),
+                    const SizedBox(height: 10),
+                    _buildDoubleResultRow(
+                      'BCP (Готовый)',
+                      _vsrFinal1.toStringAsFixed(2),
+                      _vsrFinal2.toStringAsFixed(2),
+                      resultTitleColor,
+                      textColor,
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_diameterControllers.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.only(top: 24.0, bottom: 18.0),
+                  child: Text(
+                    'Маршрут волочения:',
+                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12.0),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Table(
+                    border: TableBorder(
+                      horizontalInside: BorderSide(color: borderColor),
+                      verticalInside: BorderSide(color: borderColor),
+                    ),
+                    columnWidths: const {
+                      0: FlexColumnWidth(1.5),
+                      1: FlexColumnWidth(2),
+                      2: FlexColumnWidth(1.5),
+                    },
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    children: [
+                      TableRow(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6000AB),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12.0),
+                            topRight: Radius.circular(12.0),
+                          ),
+                        ),
                         children: [
                           Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text(i == 0 ? 'Заготовка' : 'Проход $i'),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: TextField(
-                              controller: controller,
-                              keyboardType: TextInputType.numberWithOptions(
-                                decimal: true,
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              'Этап',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: i == 0 ? 'Диаметр' : 'Блок $i',
-                              ),
-                              onChanged: (value) => _calculateReductions(),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(12),
                             child: Text(
-                              i == 0
-                                  ? '-'
-                                  : '${_reductions[i - 1].toStringAsFixed(2)}%',
+                              'Диаметр (мм)',
                               style: TextStyle(
-                                color: Colors.blue,
+                                color: Colors.white,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              'Обжатие (%)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ],
-                      );
-                    }).toList(),
-                  ],
+                      ),
+                      ..._diameterControllers.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final controller = entry.value;
+                        return TableRow(
+                          decoration:
+                              i % 2 == 0
+                                  ? BoxDecoration(
+                                    color:
+                                        isDarkTheme
+                                            ? Colors.grey[900]
+                                            : Colors.grey[100],
+                                  )
+                                  : null,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                i == 0 ? 'Заготовка' : 'Проход $i',
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 15,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: TextField(
+                                controller: controller,
+                                focusNode:
+                                    _diameterFocusNodes.isNotEmpty
+                                        ? _diameterFocusNodes[i]
+                                        : null,
+                                keyboardType: TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: i == 0 ? 'Диаметр' : 'Блок $i',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 15,
+                                  ),
+                                  contentPadding: EdgeInsets.zero,
+                                  isDense: true,
+                                ),
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 15,
+                                ),
+                                onChanged: (value) => _calculateReductions(),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                i == 0
+                                    ? '-'
+                                    : '${_reductions[i - 1].toStringAsFixed(2)}%',
+                                style: TextStyle(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    131,
+                                    29,
+                                    208,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
                 ),
               ],
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildResultRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16)),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDoubleResultRow(String title, String value1, String value2) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16)),
-          Row(
-            children: [
-              Text(
-                value1,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const Text(' - '),
-              Text(
-                value2,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
