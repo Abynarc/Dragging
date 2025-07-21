@@ -251,16 +251,71 @@ class ReferenceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Справка и формулы'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Формулы и источники'),
-              Tab(text: 'Таблица плотности цинка'),
-            ],
+          title: Text(
+            'Справки и формулы',
+            style: TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.w500,
+              color: isDarkTheme ? Colors.white : Colors.black,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(
+              60,
+            ), // Увеличили высоту для двух строк
+            child: TabBar(
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  width: 3.0,
+                  color: const Color(0xFF6000AB),
+                ),
+              ),
+              labelColor: const Color(0xFF6000AB),
+              unselectedLabelColor: Colors.grey[600],
+              labelStyle: const TextStyle(
+                fontSize: 14, // Уменьшили для лучшей адаптивности
+                fontWeight: FontWeight.w500,
+                height: 1.2, // Межстрочный интервал
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.normal,
+                color: Colors.grey[600],
+                height: 1.2,
+              ),
+              tabs: const [
+                Tab(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Формулы', textAlign: TextAlign.center),
+                        Text('и источники', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Таблица', textAlign: TextAlign.center),
+                        Text('плотности цинка', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         body: const Padding(
@@ -279,91 +334,161 @@ class FormulasAndSourcesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFormulaCard(
-            title: '1. Обжатие (уменьшение площади сечения)',
-            formula: 'Обжатие (%) = [1 - (Dпосле/Dдо)^2] × 100',
-            source: 'Грудев А.П. "Теория волочения проволоки", 1989',
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth =
+            constraints.maxWidth > 600 ? 600.0 : constraints.maxWidth * 0.95;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: SizedBox(
+              width: cardWidth,
+              child: Column(
+                children: [
+                  _buildFormulaCard(
+                    context,
+                    title: '1. Обжатие (уменьшение площади сечения)',
+                    formula: 'Обжатие (%) = [1 - (Dпосле/Dдо)^2] × 100',
+                    source: 'Грудев А.П. "Теория волочения проволоки", 1989',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '2. Расчет диаметра после обжатия',
+                    formula: 'Dпосле = √(Dцель^2/(1 - Обжатие(%)/100))',
+                    source:
+                        'Третьяков А.В. "Механические свойства металлов", 1960',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '3. Суммарное обжатие',
+                    formula:
+                        'Суммарное обжатие (%) = (Dзаготовка^2 - Dчистовой^2)/Dзаготовка^2 × 100',
+                    source:
+                        'Смирнов-Аляев Г.А. "Сопротивление материалов", 1968',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '4. Единичное обжатие',
+                    formula:
+                        'Единичное обжатие (%) = [1 - ((100 - Сум.Обжат.)/100)^(1/N)] × 100\nгде N - число проходов',
+                    source:
+                        'Зиновьев В.А. "Технология волочения металлов", 1974',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '5. ВСР заготовки',
+                    formula:
+                        'ВСРзагот = 100 × Углерод (С) + 53 - Dзаготовка ± 5',
+                    source:
+                        'Рудман Л.И. "Технология производства проволоки", 1982',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '6. ВСР готовой проволоки',
+                    formula:
+                        'ВСРготов = ВСРзагот + [0.6 × (Углерод + Dзаг/40 + 0.01 × Сум.Обжат.) × Сум.Обжат.] / [log10(√(100 - Сум.Обжат.)) + 0.0005 × Сум.Обжат.]',
+                    source:
+                        'Рудман Л.И. "Технология производства проволоки", 1982',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '7. Формула расчёта цинка на заготовке',
+                    formula:
+                        'Цинк на заготовке (г/м²) = (D_заг / D_кон) × P_кон × K\n\nГде:\n- D_заг — диаметр заготовки (мм),\n- D_кон — диаметр готовой проволоки (мм),\n- P_кон — норма цинка для конечного диаметра (г/м², по ГОСТ 7372-79, табл. 7),\n- K — поправочный коэффициент:\n  • 1.1 для групп С и Ж,\n  • 1.2–1.3 для группы ОЖ.',
+                    source:
+                        'Гуляев А.П. Технология волочения металлов. — М.: Металлургия, 1986',
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildFormulaCard(
-            title: '2. Расчет диаметра после обжатия',
-            formula: 'Dпосле = √(Dцель^2/(1 - Обжатие(%)/100))',
-            source: 'Третьяков А.В. "Механические свойства металлов", 1960',
-          ),
-          const SizedBox(height: 16),
-          _buildFormulaCard(
-            title: '3. Суммарное обжатие',
-            formula:
-                'Суммарное обжатие (%) = (Dзаготовка^2 - Dчистовой^2)/Dзаготовка^2 × 100',
-            source: 'Смирнов-Аляев Г.А. "Сопротивление материалов", 1968',
-          ),
-          const SizedBox(height: 16),
-          _buildFormulaCard(
-            title: '4. Единичное обжатие',
-            formula:
-                'Единичное обжатие (%) = [1 - ((100 - Сум.Обжат.)/100)^(1/N)] × 100\nгде N - число проходов',
-            source: 'Зиновьев В.А. "Технология волочения металлов", 1974',
-          ),
-          const SizedBox(height: 16),
-          _buildFormulaCard(
-            title: '5. ВСР заготовки',
-            formula: 'ВСРзагот = 100 × Углерод (С) + 53 - Dзаготовка ± 5',
-            source: 'Рудман Л.И. "Технология производства проволоки", 1982',
-          ),
-          const SizedBox(height: 16),
-          _buildFormulaCard(
-            title: '6. ВСР готовой проволоки',
-            formula:
-                'ВСРготов = ВСРзагот + [0.6 × (Углерод + Dзаг/40 + 0.01 × Сум.Обжат.) × Сум.Обжат.] / [log10(√(100 - Сум.Обжат.)) + 0.0005 × Сум.Обжат.]',
-            source: 'Рудман Л.И. "Технология производства проволоки", 1982',
-          ),
-          const SizedBox(height: 16),
-          _buildFormulaCard(
-            title: '7. Формула расчёта цинка на заготовке',
-            formula:
-                'Цинк на заготовке (г/м²) = (D_заг / D_кон) × P_кон × K\n\nГде:\n- D_заг — диаметр заготовки (мм),\n- D_кон — диаметр готовой проволоки (мм),\n- P_кон — норма цинка для конечного диаметра (г/м², по ГОСТ 7372-79, табл. 7),\n- K — поправочный коэффициент:\n  • 1.1 для групп С и Ж,\n  • 1.2–1.3 для группы ОЖ.',
-            source:
-                'Гуляев А.П. Технология волочения металлов. — М.: Металлургия, 1986',
-          ),
-          const SizedBox(height: 40),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildFormulaCard({
+  Widget _buildFormulaCard(
+    BuildContext context, {
     required String title,
     required String formula,
     required String source,
   }) {
-    return Card(
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              formula,
-              style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Источник: $source',
-              style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-            ),
-          ],
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    const borderColorLight = Colors.grey;
+    const borderColorDark = Color(0xFF6000AB);
+    const formulaColor = Color(0xFF6000AB);
+    const sourceBgColor = Color(0x996000AB);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDarkTheme ? borderColorDark : borderColorLight,
+          width: 1.0,
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  formula,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'monospace',
+                    color: formulaColor,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            constraints: const BoxConstraints(minHeight: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: sourceBgColor,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: isDarkTheme ? borderColorDark : borderColorLight,
+                  width: 1.0,
+                ),
+              ),
+            ),
+            child: Text(
+              source,
+              style: const TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
