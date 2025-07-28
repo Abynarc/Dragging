@@ -258,7 +258,7 @@ class ReferenceScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'Справки и формулы',
+            'Справка и формулы',
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w500,
@@ -266,9 +266,7 @@ class ReferenceScreen extends StatelessWidget {
             ),
           ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(
-              60,
-            ), // Увеличили высоту для двух строк
+            preferredSize: const Size.fromHeight(60),
             child: TabBar(
               indicator: UnderlineTabIndicator(
                 borderSide: BorderSide(
@@ -279,9 +277,9 @@ class ReferenceScreen extends StatelessWidget {
               labelColor: const Color(0xFF6000AB),
               unselectedLabelColor: Colors.grey[600],
               labelStyle: const TextStyle(
-                fontSize: 14, // Уменьшили для лучшей адаптивности
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
-                height: 1.2, // Межстрочный интервал
+                height: 1.2,
               ),
               unselectedLabelStyle: TextStyle(
                 fontSize: 13,
@@ -500,109 +498,314 @@ class ZincDensityTableTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const Text(
-            'ГОСТ 7372-79, таб. №7',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Table(
-            border: TableBorder.all(),
-            columnWidths: const {
-              0: FixedColumnWidth(100),
-              1: FixedColumnWidth(80),
-              2: FixedColumnWidth(80),
-              3: FixedColumnWidth(80),
-            },
-            children: [
-              TableRow(
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.blueGrey[800] : Colors.blueGrey,
+    final double headerFontSize =
+        MediaQuery.of(context).size.width < 600 ? 18.0 : 20.0;
+    final double tableFontSize =
+        MediaQuery.of(context).size.width < 600 ? 12.0 : 14.0;
+    final double rowHeight =
+        MediaQuery.of(context).size.width < 600 ? 36.0 : 40.0;
+    final EdgeInsets headerPadding =
+        MediaQuery.of(context).size.width < 600
+            ? const EdgeInsets.fromLTRB(12, 12, 12, 12)
+            : const EdgeInsets.fromLTRB(16, 16, 16, 16);
+
+    final headerBgColor =
+        isDarkMode
+            ? const Color(0xFF6000AB).withOpacity(0.7)
+            : const Color(0xFFF2EDF6).withOpacity(0.7);
+
+    final rowBgColor =
+        isDarkMode
+            ? Colors.grey[900]!.withOpacity(0.0)
+            : Colors.white.withOpacity(0.0);
+
+    final borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[400]!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.zero,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: headerPadding,
+                  child: Text(
+                    'ГОСТ 7372-79, таб. №7',
+                    style: TextStyle(
+                      fontSize: headerFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      'Номинальный диаметр, мм',
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
+
+                Table(
+                  border: TableBorder(
+                    top: BorderSide(color: borderColor, width: 1.0),
+                    bottom: BorderSide(color: borderColor, width: 1.0),
+                    horizontalInside: BorderSide(
+                      color: borderColor,
+                      width: 1.0,
                     ),
+                    verticalInside: BorderSide(color: borderColor, width: 1.0),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      'С',
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
+                  columnWidths: const {
+                    0: FlexColumnWidth(2),
+                    1: FlexColumnWidth(1),
+                    2: FlexColumnWidth(1),
+                    3: FlexColumnWidth(1),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(color: headerBgColor),
+                      children: [
+                        _buildHeaderCell(
+                          'Номинальный D',
+                          tableFontSize,
+                          rowHeight,
+                        ),
+                        _buildHeaderCell('C', tableFontSize, rowHeight),
+                        _buildHeaderCell('Ж', tableFontSize, rowHeight),
+                        _buildHeaderCell('ОЖ', tableFontSize, rowHeight),
+                      ],
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      'Ж',
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
+                    _buildTableRow(
+                      '0,18',
+                      '10',
+                      '20',
+                      '30',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      'ОЖ',
-                      style: const TextStyle(color: Colors.white),
-                      textAlign: TextAlign.center,
+                    _buildTableRow(
+                      'От 0,20 до 0,24 включ.',
+                      '15',
+                      '20',
+                      '30',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
                     ),
-                  ),
-                ],
-              ),
-              _buildTableRow('0,18', '10', '20', '30'),
-              _buildTableRow('От 0,20 до 0,24 включ.', '15', '20', '30'),
-              _buildTableRow('Св. 0,24 до 0,32', '20', '25', '45'),
-              _buildTableRow('Св. 0,32 до 0,38', '20', '25', '60'),
-              _buildTableRow('Св. 0,38 до 0,45', '30', '40', '75'),
-              _buildTableRow('Св. 0,45 до 0,55', '35', '40', '90'),
-              _buildTableRow('Св. 0,55 до 0,65', '40', '50', '110'),
-              _buildTableRow('Св. 0,65 до 0,75', '40', '50', '120'),
-              _buildTableRow('Св. 0,75 до 0,95', '50', '70', '130'),
-              _buildTableRow('Св. 0,95 до 1,15', '60', '80', '150'),
-              _buildTableRow('Св. 1,15 до 1,40', '60', '90', '165'),
-              _buildTableRow('Св. 1,40 до 1,80', '70', '100', '180'),
-              _buildTableRow('Св. 1,80 до 2,40', '80', '110', '205'),
-              _buildTableRow('Св. 2,40 до 3,00', '90', '125', '230'),
-              _buildTableRow('Св. 3,00 до 3,80', '100', '135', '230'),
-              _buildTableRow('Св. 3,80 до 4,40', '110', '150', '245'),
-              _buildTableRow('Св. 4,40 до 5,10', '110', '165', '245'),
-            ],
+                    _buildTableRow(
+                      'Св. 0,24 до 0,32',
+                      '20',
+                      '25',
+                      '45',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,32 до 0,38',
+                      '20',
+                      '25',
+                      '60',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,38 до 0,45',
+                      '30',
+                      '40',
+                      '75',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,45 до 0,55',
+                      '35',
+                      '40',
+                      '90',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,55 до 0,65',
+                      '40',
+                      '50',
+                      '110',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,65 до 0,75',
+                      '40',
+                      '50',
+                      '120',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,75 до 0,95',
+                      '50',
+                      '70',
+                      '130',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,95 до 1,15',
+                      '60',
+                      '80',
+                      '150',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 1,15 до 1,40',
+                      '60',
+                      '90',
+                      '165',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 1,40 до 1,80',
+                      '70',
+                      '100',
+                      '180',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 1,80 до 2,40',
+                      '80',
+                      '110',
+                      '205',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 2,40 до 3,00',
+                      '90',
+                      '125',
+                      '230',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 3,00 до 3,80',
+                      '100',
+                      '135',
+                      '230',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 3,80 до 4,40',
+                      '110',
+                      '150',
+                      '245',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 4,40 до 5,10',
+                      '110',
+                      '165',
+                      '245',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
-          const SizedBox(height: 40),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHeaderCell(String text, double fontSize, double height) {
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }
 
-  TableRow _buildTableRow(String diameter, String c, String zh, String ozh) {
+  TableRow _buildTableRow(
+    String diameter,
+    String c,
+    String zh,
+    String ozh,
+    Color bgColor,
+    Color textColor,
+    double fontSize,
+    double height,
+  ) {
     return TableRow(
+      decoration: BoxDecoration(color: bgColor),
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(diameter, textAlign: TextAlign.center),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(c, textAlign: TextAlign.center),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(zh, textAlign: TextAlign.center),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Text(ozh, textAlign: TextAlign.center),
-        ),
+        _buildTableCell(diameter, textColor, fontSize, height),
+        _buildTableCell(c, textColor, fontSize, height),
+        _buildTableCell(zh, textColor, fontSize, height),
+        _buildTableCell(ozh, textColor, fontSize, height),
       ],
+    );
+  }
+
+  Widget _buildTableCell(
+    String text,
+    Color textColor,
+    double fontSize,
+    double height,
+  ) {
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(fontSize: fontSize, color: textColor),
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }
@@ -621,38 +824,29 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   );
   final List<double> _reductions = List.filled(15, 0);
 
-  // Настройки размеров (адаптивные)
   double get blockWidth => MediaQuery.of(context).size.width * 0.9;
   double get blockPadding => 12.0;
   double get blockSpacing => 12.0;
 
-  // Шрифты
   static const double workpieceFontSize = 18.0;
   static const FontWeight workpieceFontWeight = FontWeight.normal;
   static const double blockTitleFontSize = 16.0;
-  static const double inputFontSize = 16.0; // Общий размер для всех полей ввода
+  static const double inputFontSize = 16.0;
   static const double reductionFontSize = 17.0;
 
-  // Размеры полей (адаптивные)
   double get workpieceInputWidth => blockWidth * 0.35;
   double get blockInputWidth => blockWidth * 0.45;
-  double get underlineWidth =>
-      blockWidth * 0.45; // Подчеркивание пропорционально
+  double get underlineWidth => blockWidth * 0.45;
 
-  // Границы
   static const Color blockBorderColor = Color.fromARGB(255, 212, 214, 221);
   static const double blockBorderWidth = 1.5;
   static const double blockBorderRadius = 15.0;
 
-  // Подчеркивание
   static const Color underlineColor = Color.fromARGB(255, 212, 214, 221);
   static const double underlineHeight = 1.5;
 
-  // Цвета
   static const Color lightWorkpieceTitleColor = Colors.black;
-  static const Color lightInputTextColor = Color(
-    0xFF6000AB,
-  ); // Общий цвет для ввода
+  static const Color lightInputTextColor = Color(0xFF6000AB);
   static const Color lightBlockTitleColor = Colors.black;
   static const Color lightReductionColor = Color(0xFF6000AB);
 
@@ -661,7 +855,6 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   static const Color darkBlockTitleColor = Colors.white;
   static const Color darkReductionColor = Color.fromARGB(255, 166, 49, 255);
 
-  // AppBar
   static const double appBarTitleSpacing = 10.0;
   static const Color appBarColorLight = Colors.white;
   static const Color appBarColorDark = Color(0xFF121212);
@@ -670,14 +863,12 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   static const Color appBarIconColorLight = Colors.black;
   static const Color appBarIconColorDark = Colors.white;
 
-  // Стиль ввода (общий для всех полей)
   TextStyle getInputTextStyle(bool isDarkMode) => TextStyle(
     fontSize: inputFontSize,
     color: isDarkMode ? darkInputTextColor : lightInputTextColor,
     fontWeight: FontWeight.bold,
   );
 
-  // Стиль подсказки
   TextStyle getHintTextStyle(bool isDarkMode) => TextStyle(
     fontWeight: FontWeight.normal,
     color: (isDarkMode ? darkInputTextColor : lightInputTextColor).withOpacity(
@@ -722,7 +913,6 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    // Цвета для AppBar
     final Color appBarColor = isDarkMode ? appBarColorDark : appBarColorLight;
     final Color appBarTextColor =
         isDarkMode ? appBarTextColorDark : appBarTextColorLight;
@@ -755,7 +945,6 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
                 width: blockWidth,
                 child: Column(
                   children: [
-                    // Заготовка
                     Padding(
                       padding: EdgeInsets.all(blockPadding),
                       child: Row(
@@ -806,7 +995,6 @@ class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
                     ),
                     SizedBox(height: blockSpacing),
 
-                    // Блоки 1-15
                     for (int i = 1; i < 16; i++) ...[
                       Container(
                         padding: EdgeInsets.all(blockPadding),
@@ -933,7 +1121,6 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
-  // Переменные для адаптивного дизайна
   late double screenWidth;
   late double screenHeight;
   late bool isSmallScreen;
@@ -996,7 +1183,6 @@ class _LinearRouteScreenState extends State<LinearRouteScreen> {
     super.dispose();
   }
 
-  // Адаптивные размеры
   double get adaptiveTitleSize =>
       isSmallScreen
           ? 24
@@ -1692,8 +1878,7 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   final FocusNode _rawFocusNode = FocusNode();
   final FocusNode _finalFocusNode = FocusNode();
 
-  // Настройки для кнопок групп цинка
-  final double _groupButtonBorderWidth = 1.0; // Толщина обводки при выборе
+  final double _groupButtonBorderWidth = 1.0;
   final Color _groupButtonSelectedColor = const Color(0x666000AB);
   final Color _groupButtonBorderColor = Color(0xFF6000AB);
 
@@ -1862,7 +2047,6 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   }
 
   void _calculate() {
-    // Скрываем клавиатуру
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -1912,7 +2096,6 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
   }
 
   void _reset() {
-    // Скрываем клавиатуру
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -1930,7 +2113,6 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
     final isDarkMode = theme.brightness == Brightness.dark;
     final borderColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
 
-    // Настройки для информационного блока
     final infoBackgroundColor =
         isDarkMode
             ? const Color(0xFF2D2D2D).withOpacity(0.8)
@@ -1938,7 +2120,6 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
     final infoTextColor =
         isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black;
 
-    // Адаптивные размеры
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
     final isMediumScreen = screenWidth >= 360 && screenWidth < 600;
