@@ -1941,7 +1941,9 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
     // Адаптивные размеры
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
-    final buttonWidth = isSmallScreen ? screenWidth * 0.4 : 180.0;
+    final isMediumScreen = screenWidth >= 360 && screenWidth < 600;
+    final isLargeScreen = screenWidth >= 600;
+    final buttonWidth = screenWidth * (isSmallScreen ? 0.42 : 0.44);
     final paddingValue = isSmallScreen ? 12.0 : 16.0;
 
     return GestureDetector(
@@ -2239,63 +2241,70 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
                         ),
                       ),
                       SizedBox(height: paddingValue * 2),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SizedBox(
-                            width: buttonWidth,
-                            height: 50,
-                            child: OutlinedButton(
-                              onPressed: _reset,
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color:
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: isSmallScreen ? 40.0 : 60.0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              width: buttonWidth,
+                              height: 50,
+                              child: OutlinedButton(
+                                onPressed: _reset,
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color:
+                                        isDarkMode
+                                            ? Colors.white
+                                            : Colors.black,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  foregroundColor:
                                       isDarkMode ? Colors.white : Colors.black,
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                foregroundColor:
-                                    isDarkMode ? Colors.white : Colors.black,
+                                child: const Text('Сброс'),
                               ),
-                              child: const Text('Сброс'),
                             ),
-                          ),
-                          SizedBox(
-                            width: buttonWidth,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: _calculate,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6000AB),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            SizedBox(
+                              width: buttonWidth,
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: _calculate,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6000AB),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                  shadowColor: Colors.transparent,
                                 ),
-                                elevation: 2,
-                                shadowColor: Colors.transparent,
-                              ),
-                              child: const Text(
-                                'Рассчитать',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 2,
-                                      color: Colors.black26,
-                                      offset: Offset(1, 1),
-                                    ),
-                                  ],
+                                child: const Text(
+                                  'Рассчитать',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 2,
+                                        color: Colors.black26,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       SizedBox(height: paddingValue * 1.25),
                       if (_errorMessage.isNotEmpty)
