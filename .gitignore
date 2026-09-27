@@ -1,1 +1,30 @@
-wire_drawing_calc/wire_drawing_calc_v3.0.0+11.apk
+# Local and generated files
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+**/build/
+**/.dart_tool/
+**/.gradle/
+**/local.properties
+**/key.properties
+**/*.jks
+**/*.keystore
+**/__pycache__/
+*.pyc
+*.log
+*.apk
+*.aab
+
+# Local work records and delivery archives are not application source
+/docs/
+/Delivery/
+*.zip
+*.tar.gz
+
+# This repository ships Android only
+/wire_drawing_calc/ios/
+/wire_drawing_calc/macos/
+/wire_drawing_calc/linux/
+/wire_drawing_calc/windows/
+/wire_drawing_calc/web/

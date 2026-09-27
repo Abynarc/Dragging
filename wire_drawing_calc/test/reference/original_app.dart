@@ -1,0 +1,2594 @@
+import 'package:flutter/material.dart';
+import 'dart:math';
+import 'dart:math' as math;
+
+void main() {
+  runApp(const WireDrawingApp());
+}
+
+class WireDrawingApp extends StatefulWidget {
+  const WireDrawingApp({super.key});
+
+  @override
+  State<WireDrawingApp> createState() => _WireDrawingAppState();
+}
+
+class _WireDrawingAppState extends State<WireDrawingApp> {
+  bool _darkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _darkMode =
+        WidgetsBinding.instance.window.platformBrightness == Brightness.dark;
+  }
+
+  void _toggleDarkMode() {
+    setState(() {
+      _darkMode = !_darkMode;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Калькулятор волочения',
+      theme: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.light(surface: Colors.white),
+      ),
+      darkTheme: ThemeData.dark().copyWith(
+        textTheme: ThemeData.dark().textTheme.apply(
+          bodyColor: Colors.grey[300],
+          displayColor: Colors.grey[300],
+        ),
+      ),
+      themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
+      home: HomeScreen(darkMode: _darkMode, toggleDarkMode: _toggleDarkMode),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  final bool darkMode;
+  final VoidCallback toggleDarkMode;
+
+  const HomeScreen({
+    super.key,
+    required this.darkMode,
+    required this.toggleDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Scaffold(
+      body: Column(
+        children: [
+          const SizedBox(height: 44),
+          SizedBox(
+            height: screenHeight * 0.3,
+            width: double.infinity,
+            child: Image.asset(
+              'assets/background.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.blueGrey,
+                  child: const Center(
+                    child: Icon(Icons.image, size: 50, color: Colors.white),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: screenHeight * 0.04,
+              bottom: screenHeight * 0.03,
+              left: screenWidth * 0.07,
+            ),
+            child: Text(
+              'Выберите\nрежим расчёта',
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: screenHeight * 0.03,
+                fontWeight: FontWeight.w800,
+                color: darkMode ? Colors.grey[300] : const Color(0xFF1F2024),
+                height: 1.2,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.05,
+                vertical: screenHeight * 0.01,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _buildMenuButton(
+                    context,
+                    'Расчёт маршрута',
+                    const RouteCalculationScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  _buildMenuButton(
+                    context,
+                    'Расчёт линейного маршрута',
+                    const LinearRouteScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  _buildMenuButton(
+                    context,
+                    'Расчёт цинка на заготовке',
+                    const ZincCalculationScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  _buildMenuButton(
+                    context,
+                    'Справка и формулы',
+                    const ReferenceScreen(),
+                    buttonHeight: screenHeight * 0.075,
+                    fontSize: 15,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: screenHeight * 0.025,
+              left: screenWidth * 0.06,
+              right: screenWidth * 0.04,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'by DK and IB',
+                  style: TextStyle(
+                    color:
+                        darkMode
+                            ? Colors.white.withOpacity(0.9)
+                            : Colors.black.withOpacity(0.9),
+                    fontSize: screenHeight * 0.018,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: darkMode ? Colors.amber : Colors.black,
+                      width: 1.0,
+                    ),
+                  ),
+                  child: IconButton(
+                    onPressed: toggleDarkMode,
+                    iconSize: screenHeight * 0.029,
+                    icon: Icon(
+                      darkMode ? Icons.wb_sunny : Icons.nightlight_round,
+                      color: darkMode ? Colors.amber : Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuButton(
+    BuildContext context,
+    String text,
+    Widget screen, {
+    required double buttonHeight,
+    double fontSize = 16,
+    double frameWidth = 1.4,
+    FontWeight fontWeight = FontWeight.w400,
+  }) {
+    return SizedBox(
+      height: buttonHeight,
+      child: ElevatedButton(
+        onPressed:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => screen),
+            ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+          padding: EdgeInsets.symmetric(
+            vertical: buttonHeight * 0.15,
+            horizontal: MediaQuery.of(context).size.width * 0.05,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: darkMode ? Colors.grey[700]! : const Color(0xFFD4D6DD),
+              width: frameWidth,
+            ),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              text,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ReferenceScreen extends StatelessWidget {
+  const ReferenceScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Справка и формулы',
+            style: TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.w500,
+              color: isDarkTheme ? Colors.white : Colors.black,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: TabBar(
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  width: 3.0,
+                  color: const Color(0xFF6000AB),
+                ),
+              ),
+              labelColor: const Color(0xFF6000AB),
+              unselectedLabelColor: Colors.grey[600],
+              labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.normal,
+                color: Colors.grey[600],
+                height: 1.2,
+              ),
+              tabs: const [
+                Tab(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Формулы', textAlign: TextAlign.center),
+                        Text('и источники', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
+                Tab(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Таблица', textAlign: TextAlign.center),
+                        Text('плотности цинка', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: const Padding(
+          padding: EdgeInsets.only(bottom: 60),
+          child: TabBarView(
+            children: [FormulasAndSourcesTab(), ZincDensityTableTab()],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FormulasAndSourcesTab extends StatelessWidget {
+  const FormulasAndSourcesTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth =
+            constraints.maxWidth > 600 ? 600.0 : constraints.maxWidth * 0.95;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: SizedBox(
+              width: cardWidth,
+              child: Column(
+                children: [
+                  _buildFormulaCard(
+                    context,
+                    title: '1. Обжатие (уменьшение площади сечения)',
+                    formula: 'Обжатие (%) = [1 - (Dпосле/Dдо)^2] × 100',
+                    source: 'Грудев А.П. "Теория волочения проволоки", 1989',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '2. Расчет диаметра после обжатия',
+                    formula: 'Dпосле = √(Dцель^2/(1 - Обжатие(%)/100))',
+                    source:
+                        'Третьяков А.В. "Механические свойства металлов", 1960',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '3. Суммарное обжатие',
+                    formula:
+                        'Суммарное обжатие (%) = (Dзаготовка^2 - Dчистовой^2)/Dзаготовка^2 × 100',
+                    source:
+                        'Смирнов-Аляев Г.А. "Сопротивление материалов", 1968',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '4. Единичное обжатие',
+                    formula:
+                        'Единичное обжатие (%) = [1 - ((100 - Сум.Обжат.)/100)^(1/N)] × 100\nгде N - число проходов',
+                    source:
+                        'Зиновьев В.А. "Технология волочения металлов", 1974',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '5. ВСР заготовки',
+                    formula:
+                        'ВСРзагот = 100 × Углерод (С) + 53 - Dзаготовка ± 5',
+                    source:
+                        'Рудман Л.И. "Технология производства проволоки", 1982',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '6. ВСР готовой проволоки',
+                    formula:
+                        'ВСРготов = ВСРзагот + [0.6 × (Углерод + Dзаг/40 + 0.01 × Сум.Обжат.) × Сум.Обжат.] / [log10(√(100 - Сум.Обжат.)) + 0.0005 × Сум.Обжат.]',
+                    source:
+                        'Рудман Л.И. "Технология производства проволоки", 1982',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormulaCard(
+                    context,
+                    title: '7. Формула расчёта цинка на заготовке',
+                    formula:
+                        'Цинк на заготовке (г/м²) = (D_заг / D_кон) × P_кон × K\n\nГде:\n- D_заг — диаметр заготовки (мм),\n- D_кон — диаметр готовой проволоки (мм),\n- P_кон — норма цинка для конечного диаметра (г/м², по ГОСТ 7372-79, табл. 7),\n- K — поправочный коэффициент:\n  • 1.1 для групп С и Ж,\n  • 1.2–1.3 для группы ОЖ.',
+                    source:
+                        'Гуляев А.П. Технология волочения металлов. — М.: Металлургия, 1986',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFormulaCard(
+    BuildContext context, {
+    required String title,
+    required String formula,
+    required String source,
+  }) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    const borderColorLight = Colors.grey;
+    const borderColorDark = Color(0xFF6000AB);
+    const formulaColor = Color(0xFF6000AB);
+    const sourceBgColor = Color(0x996000AB);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDarkTheme ? borderColorDark : borderColorLight,
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  formula,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'monospace',
+                    color: formulaColor,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            constraints: const BoxConstraints(minHeight: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: sourceBgColor,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: isDarkTheme ? borderColorDark : borderColorLight,
+                  width: 1.0,
+                ),
+              ),
+            ),
+            child: Text(
+              source,
+              style: const TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ZincDensityTableTab extends StatelessWidget {
+  const ZincDensityTableTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
+    final double headerFontSize =
+        MediaQuery.of(context).size.width < 600 ? 18.0 : 20.0;
+    final double tableFontSize =
+        MediaQuery.of(context).size.width < 600 ? 12.0 : 14.0;
+    final double rowHeight =
+        MediaQuery.of(context).size.width < 600 ? 36.0 : 40.0;
+    final EdgeInsets headerPadding =
+        MediaQuery.of(context).size.width < 600
+            ? const EdgeInsets.fromLTRB(12, 12, 12, 12)
+            : const EdgeInsets.fromLTRB(16, 16, 16, 16);
+
+    final headerBgColor =
+        isDarkMode
+            ? const Color(0xFF6000AB).withOpacity(0.7)
+            : const Color(0xFFF2EDF6).withOpacity(0.7);
+
+    final rowBgColor =
+        isDarkMode
+            ? Colors.grey[900]!.withOpacity(0.0)
+            : Colors.white.withOpacity(0.0);
+
+    final borderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[400]!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.zero,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: headerPadding,
+                  child: Text(
+                    'ГОСТ 7372-79, таб. №7',
+                    style: TextStyle(
+                      fontSize: headerFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                Table(
+                  border: TableBorder(
+                    top: BorderSide(color: borderColor, width: 1.0),
+                    bottom: BorderSide(color: borderColor, width: 1.0),
+                    horizontalInside: BorderSide(
+                      color: borderColor,
+                      width: 1.0,
+                    ),
+                    verticalInside: BorderSide(color: borderColor, width: 1.0),
+                  ),
+                  columnWidths: const {
+                    0: FlexColumnWidth(2),
+                    1: FlexColumnWidth(1),
+                    2: FlexColumnWidth(1),
+                    3: FlexColumnWidth(1),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(color: headerBgColor),
+                      children: [
+                        _buildHeaderCell(
+                          'Номинальный D',
+                          tableFontSize,
+                          rowHeight,
+                        ),
+                        _buildHeaderCell('C', tableFontSize, rowHeight),
+                        _buildHeaderCell('Ж', tableFontSize, rowHeight),
+                        _buildHeaderCell('ОЖ', tableFontSize, rowHeight),
+                      ],
+                    ),
+                    _buildTableRow(
+                      '0,18',
+                      '10',
+                      '20',
+                      '30',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'От 0,20 до 0,24 включ.',
+                      '15',
+                      '20',
+                      '30',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,24 до 0,32',
+                      '20',
+                      '25',
+                      '45',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,32 до 0,38',
+                      '20',
+                      '25',
+                      '60',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,38 до 0,45',
+                      '30',
+                      '40',
+                      '75',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,45 до 0,55',
+                      '35',
+                      '40',
+                      '90',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,55 до 0,65',
+                      '40',
+                      '50',
+                      '110',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,65 до 0,75',
+                      '40',
+                      '50',
+                      '120',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,75 до 0,95',
+                      '50',
+                      '70',
+                      '130',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 0,95 до 1,15',
+                      '60',
+                      '80',
+                      '150',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 1,15 до 1,40',
+                      '60',
+                      '90',
+                      '165',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 1,40 до 1,80',
+                      '70',
+                      '100',
+                      '180',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 1,80 до 2,40',
+                      '80',
+                      '110',
+                      '205',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 2,40 до 3,00',
+                      '90',
+                      '125',
+                      '230',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 3,00 до 3,80',
+                      '100',
+                      '135',
+                      '230',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 3,80 до 4,40',
+                      '110',
+                      '150',
+                      '245',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                    _buildTableRow(
+                      'Св. 4,40 до 5,10',
+                      '110',
+                      '165',
+                      '245',
+                      rowBgColor,
+                      textColor,
+                      tableFontSize,
+                      rowHeight,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeaderCell(String text, double fontSize, double height) {
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  TableRow _buildTableRow(
+    String diameter,
+    String c,
+    String zh,
+    String ozh,
+    Color bgColor,
+    Color textColor,
+    double fontSize,
+    double height,
+  ) {
+    return TableRow(
+      decoration: BoxDecoration(color: bgColor),
+      children: [
+        _buildTableCell(diameter, textColor, fontSize, height),
+        _buildTableCell(c, textColor, fontSize, height),
+        _buildTableCell(zh, textColor, fontSize, height),
+        _buildTableCell(ozh, textColor, fontSize, height),
+      ],
+    );
+  }
+
+  Widget _buildTableCell(
+    String text,
+    Color textColor,
+    double fontSize,
+    double height,
+  ) {
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(fontSize: fontSize, color: textColor),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class RouteCalculationScreen extends StatefulWidget {
+  const RouteCalculationScreen({super.key});
+
+  @override
+  State<RouteCalculationScreen> createState() => _RouteCalculationScreenState();
+}
+
+class _RouteCalculationScreenState extends State<RouteCalculationScreen> {
+  final List<TextEditingController> _diameterControllers = List.generate(
+    16,
+    (_) => TextEditingController(),
+  );
+  final List<double> _reductions = List.filled(15, 0);
+
+  double get blockWidth => MediaQuery.of(context).size.width * 0.9;
+  double get blockPadding => 12.0;
+  double get blockSpacing => 12.0;
+
+  static const double workpieceFontSize = 18.0;
+  static const FontWeight workpieceFontWeight = FontWeight.normal;
+  static const double blockTitleFontSize = 16.0;
+  static const double inputFontSize = 16.0;
+  static const double reductionFontSize = 17.0;
+
+  double get workpieceInputWidth => blockWidth * 0.35;
+  double get blockInputWidth => blockWidth * 0.45;
+  double get underlineWidth => blockWidth * 0.45;
+
+  static const Color blockBorderColor = Color.fromARGB(255, 212, 214, 221);
+  static const double blockBorderWidth = 1.5;
+  static const double blockBorderRadius = 15.0;
+
+  static const Color underlineColor = Color.fromARGB(255, 212, 214, 221);
+  static const double underlineHeight = 1.5;
+
+  static const Color lightWorkpieceTitleColor = Colors.black;
+  static const Color lightInputTextColor = Color(0xFF6000AB);
+  static const Color lightBlockTitleColor = Colors.black;
+  static const Color lightReductionColor = Color(0xFF6000AB);
+
+  static const Color darkWorkpieceTitleColor = Colors.white;
+  static const Color darkInputTextColor = Colors.white;
+  static const Color darkBlockTitleColor = Colors.white;
+  static const Color darkReductionColor = Color.fromARGB(255, 166, 49, 255);
+
+  static const double appBarTitleSpacing = 10.0;
+  static const Color appBarColorLight = Colors.white;
+  static const Color appBarColorDark = Color(0xFF121212);
+  static const Color appBarTextColorLight = Colors.black;
+  static const Color appBarTextColorDark = Colors.white;
+  static const Color appBarIconColorLight = Colors.black;
+  static const Color appBarIconColorDark = Colors.white;
+
+  TextStyle getInputTextStyle(bool isDarkMode) => TextStyle(
+    fontSize: inputFontSize,
+    color: isDarkMode ? darkInputTextColor : lightInputTextColor,
+    fontWeight: FontWeight.bold,
+  );
+
+  TextStyle getHintTextStyle(bool isDarkMode) => TextStyle(
+    fontWeight: FontWeight.normal,
+    color: (isDarkMode ? darkInputTextColor : lightInputTextColor).withOpacity(
+      0.5,
+    ),
+  );
+
+  double _parseInput(String value) {
+    return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  }
+
+  void _calculateReductions() {
+    try {
+      for (int i = 1; i < 16; i++) {
+        final double prev = _parseInput(_diameterControllers[i - 1].text);
+        final double next = _parseInput(_diameterControllers[i].text);
+
+        if (prev == 0 || next == 0) {
+          _reductions[i - 1] = 0;
+          continue;
+        }
+
+        _reductions[i - 1] = (1 - math.pow(next / prev, 2)) * 100;
+      }
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ошибка в расчётах! Проверьте данные')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _diameterControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final Color appBarColor = isDarkMode ? appBarColorDark : appBarColorLight;
+    final Color appBarTextColor =
+        isDarkMode ? appBarTextColorDark : appBarTextColorLight;
+    final Color appBarIconColor =
+        isDarkMode ? appBarIconColorDark : appBarIconColorLight;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Расчёт маршрута'),
+        titleSpacing: appBarTitleSpacing,
+        backgroundColor: appBarColor,
+        foregroundColor: appBarIconColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleTextStyle: TextStyle(
+          color: appBarTextColor,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: constraints.maxWidth > 600 ? 24.0 : 16.0,
+              vertical: 16.0,
+            ),
+            child: Center(
+              child: SizedBox(
+                width: blockWidth,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(blockPadding),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Заготовка',
+                            style: TextStyle(
+                              fontSize: workpieceFontSize,
+                              color:
+                                  isDarkMode
+                                      ? darkWorkpieceTitleColor
+                                      : lightWorkpieceTitleColor,
+                              fontWeight: workpieceFontWeight,
+                            ),
+                          ),
+                          SizedBox(
+                            width: workpieceInputWidth,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                TextField(
+                                  controller: _diameterControllers[0],
+                                  textAlign: TextAlign.right,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  style: getInputTextStyle(isDarkMode),
+                                  decoration: InputDecoration(
+                                    hintText: 'Диаметр',
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                    hintStyle: getHintTextStyle(isDarkMode),
+                                  ),
+                                  onChanged: (value) => _calculateReductions(),
+                                ),
+                                Container(
+                                  height: underlineHeight,
+                                  width: underlineWidth,
+                                  color: underlineColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: blockSpacing),
+
+                    for (int i = 1; i < 16; i++) ...[
+                      Container(
+                        padding: EdgeInsets.all(blockPadding),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: blockBorderColor,
+                            width: blockBorderWidth,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            blockBorderRadius,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Блок $i',
+                                  style: TextStyle(
+                                    fontSize: blockTitleFontSize,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        isDarkMode
+                                            ? darkBlockTitleColor
+                                            : lightBlockTitleColor,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: blockInputWidth,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      TextField(
+                                        controller: _diameterControllers[i],
+                                        textAlign: TextAlign.right,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: getInputTextStyle(isDarkMode),
+                                        decoration: InputDecoration(
+                                          hintText: 'Введите значение',
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.zero,
+                                          hintStyle: getHintTextStyle(
+                                            isDarkMode,
+                                          ),
+                                        ),
+                                        onChanged:
+                                            (value) => _calculateReductions(),
+                                      ),
+                                      Container(
+                                        height: underlineHeight,
+                                        width: underlineWidth,
+                                        color: underlineColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  'Обжатие: ${_reductions[i - 1].toStringAsFixed(2)}%',
+                                  style: TextStyle(
+                                    fontSize: reductionFontSize,
+                                    color:
+                                        isDarkMode
+                                            ? darkReductionColor
+                                            : lightReductionColor,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (i < 15) SizedBox(height: blockSpacing),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class LinearRouteScreen extends StatefulWidget {
+  const LinearRouteScreen({super.key});
+
+  @override
+  State<LinearRouteScreen> createState() => _LinearRouteScreenState();
+}
+
+class _LinearRouteScreenState extends State<LinearRouteScreen> {
+  final TextEditingController _diameterRaw = TextEditingController();
+  final TextEditingController _diameterFinal = TextEditingController();
+  final TextEditingController _passes = TextEditingController();
+  final TextEditingController _carbon = TextEditingController();
+
+  double _totalReduction = 0;
+  double _unitReduction = 0;
+  double _vsrRaw1 = 0;
+  double _vsrRaw2 = 0;
+  double _vsrFinal1 = 0;
+  double _vsrFinal2 = 0;
+
+  List<TextEditingController> _diameterControllers = [];
+  List<double> _reductions = [];
+
+  final FocusNode _diameterRawFocus = FocusNode();
+  final FocusNode _diameterFinalFocus = FocusNode();
+  final FocusNode _passesFocus = FocusNode();
+  final FocusNode _carbonFocus = FocusNode();
+  List<FocusNode> _diameterFocusNodes = [];
+
+  final ScrollController _scrollController = ScrollController();
+
+  late double screenWidth;
+  late double screenHeight;
+  late bool isSmallScreen;
+  late bool isMediumScreen;
+  late bool isLargeScreen;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final mediaQuery = MediaQuery.of(context);
+    screenWidth = mediaQuery.size.width;
+    screenHeight = mediaQuery.size.height;
+
+    isSmallScreen = screenWidth < 360;
+    isMediumScreen = screenWidth >= 360 && screenWidth < 600;
+    isLargeScreen = screenWidth >= 600;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _carbonFocus.addListener(_handleCarbonFocus);
+    _scrollController.addListener(_handleScroll);
+  }
+
+  void _handleScroll() {
+    setState(() {});
+  }
+
+  void _handleCarbonFocus() {
+    if (_carbonFocus.hasFocus && _carbon.text.isEmpty) {
+      _carbon.text = '0,';
+      _carbon.selection = TextSelection.fromPosition(
+        TextPosition(offset: _carbon.text.length),
+      );
+    } else if (!_carbonFocus.hasFocus && _carbon.text == '0,') {
+      _carbon.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _diameterRaw.dispose();
+    _diameterFinal.dispose();
+    _passes.dispose();
+    _carbon.dispose();
+    for (var controller in _diameterControllers) {
+      controller.dispose();
+    }
+    _diameterRawFocus.dispose();
+    _diameterFinalFocus.dispose();
+    _passesFocus.dispose();
+    _carbonFocus.removeListener(_handleCarbonFocus);
+    _carbonFocus.dispose();
+    for (var focusNode in _diameterFocusNodes) {
+      focusNode.dispose();
+    }
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  double get adaptiveTitleSize =>
+      isSmallScreen
+          ? 24
+          : isMediumScreen
+          ? 28
+          : 30;
+  double get adaptiveTextSize =>
+      isSmallScreen
+          ? 14
+          : isMediumScreen
+          ? 15
+          : 16;
+  double get adaptiveButtonTextSize => isSmallScreen ? 15 : 17;
+  EdgeInsets get adaptivePadding =>
+      isSmallScreen
+          ? const EdgeInsets.all(12.0)
+          : isMediumScreen
+          ? const EdgeInsets.all(14.0)
+          : const EdgeInsets.all(16.0);
+  EdgeInsets get adaptiveFieldPadding =>
+      isSmallScreen
+          ? const EdgeInsets.symmetric(vertical: 8.0)
+          : const EdgeInsets.symmetric(vertical: 12.0);
+  EdgeInsets get adaptiveResultPadding =>
+      isSmallScreen
+          ? const EdgeInsets.symmetric(vertical: 2.0)
+          : isMediumScreen
+          ? const EdgeInsets.symmetric(vertical: 3.0)
+          : const EdgeInsets.symmetric(vertical: 4.0);
+
+  double _parseInput(String value) {
+    if (value.isEmpty) return 0;
+    return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  }
+
+  void _resetData() {
+    _diameterRaw.clear();
+    _diameterFinal.clear();
+    _passes.clear();
+    _carbon.clear();
+    for (var controller in _diameterControllers) {
+      controller.dispose();
+    }
+    _diameterControllers.clear();
+    _reductions.clear();
+    _totalReduction = 0;
+    _unitReduction = 0;
+    _vsrRaw1 = 0;
+    _vsrRaw2 = 0;
+    _vsrFinal1 = 0;
+    _vsrFinal2 = 0;
+
+    for (var focusNode in _diameterFocusNodes) {
+      focusNode.dispose();
+    }
+    _diameterFocusNodes.clear();
+
+    FocusScope.of(context).unfocus();
+    setState(() {});
+  }
+
+  void _calculateReductions() {
+    for (int i = 1; i < _diameterControllers.length; i++) {
+      final double prev = _parseInput(_diameterControllers[i - 1].text);
+      final double next = _parseInput(_diameterControllers[i].text);
+
+      if (prev == 0 || next == 0) {
+        _reductions[i - 1] = 0;
+        continue;
+      }
+
+      _reductions[i - 1] = (1 - math.pow(next / prev, 2)) * 100;
+    }
+    setState(() {});
+  }
+
+  void _calculate() {
+    try {
+      FocusScope.of(context).unfocus();
+
+      final double dRaw = _parseInput(_diameterRaw.text);
+      final double dFinal = _parseInput(_diameterFinal.text);
+      final int passes = int.tryParse(_passes.text) ?? 0;
+      final double carbon = _parseInput(_carbon.text);
+
+      if (dRaw <= 0 || dFinal <= 0 || passes <= 0) {
+        throw 'Неверные входные данные';
+      }
+      if (dFinal >= dRaw) {
+        throw 'Чистовой диаметр должен быть меньше заготовки';
+      }
+
+      _totalReduction = (1 - math.pow(dFinal / dRaw, 2)) * 100;
+      _unitReduction =
+          (1 - math.pow((100 - _totalReduction) / 100, 1 / passes)) * 100;
+      _vsrRaw1 = 100 * carbon + 53 - dRaw - 5;
+      _vsrRaw2 = 100 * carbon + 53 - dRaw + 5;
+
+      final commonPart =
+          0.6 * (carbon + dRaw / 40 + 0.01 * _unitReduction) * _totalReduction;
+      final denominator =
+          math.log(math.sqrt(100 - _totalReduction)) / math.log(10) +
+          0.0005 * _totalReduction;
+
+      _vsrFinal1 = _vsrRaw1 + (denominator != 0 ? commonPart / denominator : 0);
+      _vsrFinal2 = _vsrRaw2 + (denominator != 0 ? commonPart / denominator : 0);
+
+      _diameterControllers = List.generate(
+        passes + 1,
+        (_) => TextEditingController(),
+      );
+      _reductions = List.filled(passes, 0);
+      _diameterFocusNodes = List.generate(passes + 1, (_) => FocusNode());
+
+      double currentDiameter = dRaw;
+      for (int i = 0; i <= passes; i++) {
+        _diameterControllers[i].text = currentDiameter.toStringAsFixed(2);
+        if (i < passes) {
+          currentDiameter *= math.sqrt(1 - _unitReduction / 100);
+        }
+      }
+      _diameterControllers[passes].text = dFinal.toStringAsFixed(2);
+      _calculateReductions();
+
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  String _formatCarbonInput(String input) {
+    if (input.startsWith('.') || input.startsWith(',')) {
+      return '0${input.replaceFirst(',', '.')}';
+    }
+    return input.replaceAll(',', '.');
+  }
+
+  Widget _buildResultRow(
+    String title,
+    String value,
+    Color titleColor,
+    Color valueColor,
+  ) {
+    return Padding(
+      padding: adaptiveResultPadding,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: adaptiveTextSize, color: titleColor),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: adaptiveTextSize,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoubleResultRow(
+    String title,
+    String value1,
+    String value2,
+    Color titleColor,
+    Color valueColor,
+  ) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 4.0 : 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: adaptiveTextSize, color: titleColor),
+          ),
+          Row(
+            children: [
+              Text(
+                value1,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: adaptiveTextSize,
+                  color: valueColor,
+                ),
+              ),
+              Text(
+                ' - ',
+                style: TextStyle(fontSize: adaptiveTextSize, color: valueColor),
+              ),
+              Text(
+                value2,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: adaptiveTextSize,
+                  color: valueColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkTheme ? Colors.white : Colors.black;
+    final borderColor = isDarkTheme ? Colors.grey[600]! : Colors.grey[400]!;
+    final focusedBorderColor =
+        isDarkTheme ? const Color(0xFF6000AB) : const Color(0xFF6000AB);
+    final labelColor = isDarkTheme ? Colors.grey[400]! : Colors.grey[600]!;
+    final resultTitleColor =
+        isDarkTheme ? Colors.grey[400]! : Colors.grey[600]!;
+    final tableHeaderColor =
+        isDarkTheme ? const Color(0xFF6000AB) : const Color(0xFF6000AB);
+
+    final inputDecoration = InputDecoration(
+      labelStyle: TextStyle(color: labelColor, fontSize: adaptiveTextSize),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(color: borderColor, width: 1.0),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isSmallScreen ? 10.0 : 14.0),
+        borderSide: BorderSide(color: borderColor, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(isSmallScreen ? 10.0 : 14.0),
+        borderSide: BorderSide(color: focusedBorderColor, width: 1.5),
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 12.0 : 16.0,
+        vertical: isSmallScreen ? 10.0 : 14.0,
+      ),
+    );
+
+    final buttonPadding = MaterialStateProperty.all<EdgeInsetsGeometry>(
+      EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 10.0 : 14.0,
+        vertical: isSmallScreen ? 12.0 : 16.0,
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Линейный маршрут',
+          style: TextStyle(fontSize: adaptiveTitleSize - 2),
+        ),
+        backgroundColor:
+            isDarkTheme
+                ? Theme.of(context).scaffoldBackgroundColor
+                : Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDarkTheme ? Colors.white : Colors.black,
+        ),
+      ),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          child: Padding(
+            padding: adaptivePadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: isSmallScreen ? 6.0 : 8.0,
+                          bottom: isSmallScreen ? 12.0 : 16.0,
+                          top: isSmallScreen ? 20.0 : 30.0,
+                        ),
+                        child: TextField(
+                          controller: _diameterRaw,
+                          focusNode: _diameterRawFocus,
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'D Загот. (мм)',
+                          ),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: adaptiveTextSize,
+                          ),
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: isSmallScreen ? 6.0 : 8.0,
+                          bottom: isSmallScreen ? 12.0 : 16.0,
+                          top: isSmallScreen ? 20.0 : 30.0,
+                        ),
+                        child: TextField(
+                          controller: _diameterFinal,
+                          focusNode: _diameterFinalFocus,
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'D Чист. (мм)',
+                          ),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: adaptiveTextSize,
+                          ),
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: isSmallScreen ? 6.0 : 8.0,
+                          bottom: isSmallScreen ? 20.0 : 26.0,
+                          top: isSmallScreen ? 8.0 : 12.0,
+                        ),
+                        child: TextField(
+                          controller: _passes,
+                          focusNode: _passesFocus,
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'Число проходов',
+                          ),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: adaptiveTextSize,
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: isSmallScreen ? 6.0 : 8.0,
+                          bottom: isSmallScreen ? 20.0 : 26.0,
+                          top: isSmallScreen ? 8.0 : 12.0,
+                        ),
+                        child: TextField(
+                          controller: _carbon,
+                          focusNode: _carbonFocus,
+                          decoration: inputDecoration.copyWith(
+                            labelText: 'Углерод (С)',
+                          ),
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: adaptiveTextSize,
+                          ),
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: (value) {
+                            if (value.startsWith('.') ||
+                                value.startsWith(',')) {
+                              _carbon.text = _formatCarbonInput(value);
+                              _carbon.selection = TextSelection.fromPosition(
+                                TextPosition(offset: _carbon.text.length),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                Padding(
+                  padding: EdgeInsets.only(bottom: isSmallScreen ? 40.0 : 60.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                        width: screenWidth * (isSmallScreen ? 0.42 : 0.44),
+                        child: OutlinedButton(
+                          onPressed: _resetData,
+                          style: ButtonStyle(
+                            padding: buttonPadding,
+                            side: MaterialStateProperty.all<BorderSide>(
+                              BorderSide(
+                                color:
+                                    isDarkTheme ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            shape: MaterialStateProperty.all<OutlinedBorder>(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  isSmallScreen ? 12.0 : 14.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Сброс',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: adaptiveButtonTextSize,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: screenWidth * (isSmallScreen ? 0.42 : 0.44),
+                        child: ElevatedButton(
+                          onPressed: _calculate,
+                          style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all<Color>(
+                              const Color(0xFF6000AB),
+                            ),
+                            padding: buttonPadding,
+                            shape: MaterialStateProperty.all<OutlinedBorder>(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  isSmallScreen ? 12.0 : 14.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Рассчитать',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: adaptiveButtonTextSize,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: isSmallScreen ? 4.0 : 8.0,
+                    bottom: isSmallScreen ? 20.0 : 30.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Результат',
+                        style: TextStyle(
+                          fontSize: adaptiveTitleSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: isSmallScreen ? 6.0 : 10.0),
+                      _buildResultRow(
+                        'Суммарное обжатие',
+                        '${_totalReduction.toStringAsFixed(2)} %',
+                        resultTitleColor,
+                        textColor,
+                      ),
+                      SizedBox(height: isSmallScreen ? 6.0 : 10.0),
+                      _buildResultRow(
+                        'Единичное обжатие',
+                        '${_unitReduction.toStringAsFixed(2)} %',
+                        resultTitleColor,
+                        textColor,
+                      ),
+                      SizedBox(height: isSmallScreen ? 6.0 : 10.0),
+                      _buildDoubleResultRow(
+                        'BCP (Заготовка)',
+                        _vsrRaw1.toStringAsFixed(2),
+                        _vsrRaw2.toStringAsFixed(2),
+                        resultTitleColor,
+                        textColor,
+                      ),
+                      SizedBox(height: isSmallScreen ? 6.0 : 10.0),
+                      _buildDoubleResultRow(
+                        'BCP (Готовый)',
+                        _vsrFinal1.toStringAsFixed(2),
+                        _vsrFinal2.toStringAsFixed(2),
+                        resultTitleColor,
+                        textColor,
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (_diameterControllers.isNotEmpty) ...[
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: isSmallScreen ? 16.0 : 24.0,
+                      bottom: isSmallScreen ? 12.0 : 18.0,
+                    ),
+                    child: Text(
+                      'Маршрут волочения:',
+                      style: TextStyle(
+                        fontSize: adaptiveTitleSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        isSmallScreen ? 8.0 : 12.0,
+                      ),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Table(
+                      border: TableBorder(
+                        horizontalInside: BorderSide(color: borderColor),
+                        verticalInside: BorderSide(color: borderColor),
+                      ),
+                      columnWidths: const {
+                        0: FlexColumnWidth(1.5),
+                        1: FlexColumnWidth(2),
+                        2: FlexColumnWidth(1.5),
+                      },
+                      defaultVerticalAlignment:
+                          TableCellVerticalAlignment.middle,
+                      children: [
+                        TableRow(
+                          decoration: BoxDecoration(
+                            color: tableHeaderColor,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(
+                                isSmallScreen ? 8.0 : 12.0,
+                              ),
+                              topRight: Radius.circular(
+                                isSmallScreen ? 8.0 : 12.0,
+                              ),
+                            ),
+                          ),
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.all(isSmallScreen ? 8.0 : 12),
+                              child: Text(
+                                'Этап',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isSmallScreen ? 14.0 : 16.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(isSmallScreen ? 8.0 : 12),
+                              child: Text(
+                                'Диаметр (мм)',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isSmallScreen ? 14.0 : 16.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(isSmallScreen ? 8.0 : 12),
+                              child: Text(
+                                'Обжатие (%)',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isSmallScreen ? 14.0 : 16.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                        ..._diameterControllers.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final controller = entry.value;
+                          return TableRow(
+                            decoration:
+                                i % 2 == 0
+                                    ? BoxDecoration(
+                                      color:
+                                          isDarkTheme
+                                              ? Colors.grey[900]
+                                              : Colors.grey[100],
+                                    )
+                                    : null,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(
+                                  isSmallScreen ? 8.0 : 12,
+                                ),
+                                child: Text(
+                                  i == 0 ? 'Заготовка' : 'Проход $i',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: isSmallScreen ? 13.0 : 15.0,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(
+                                  isSmallScreen ? 8.0 : 12,
+                                ),
+                                child: TextField(
+                                  controller: controller,
+                                  focusNode:
+                                      _diameterFocusNodes.isNotEmpty
+                                          ? _diameterFocusNodes[i]
+                                          : null,
+                                  keyboardType: TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: i == 0 ? 'Диаметр' : 'Блок $i',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: isSmallScreen ? 13.0 : 15.0,
+                                    ),
+                                    contentPadding: EdgeInsets.zero,
+                                    isDense: true,
+                                  ),
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: isSmallScreen ? 13.0 : 15.0,
+                                  ),
+                                  onChanged: (value) => _calculateReductions(),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(
+                                  isSmallScreen ? 8.0 : 12,
+                                ),
+                                child: Text(
+                                  i == 0
+                                      ? '-'
+                                      : '${_reductions[i - 1].toStringAsFixed(2)}%',
+                                  style: TextStyle(
+                                    color: const Color.fromARGB(
+                                      255,
+                                      131,
+                                      29,
+                                      208,
+                                    ),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: isSmallScreen ? 13.0 : 15.0,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ZincCalculationScreen extends StatefulWidget {
+  const ZincCalculationScreen({super.key});
+
+  @override
+  State<ZincCalculationScreen> createState() => _ZincCalculationScreenState();
+}
+
+class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
+  final TextEditingController _diameterRawController = TextEditingController();
+  final TextEditingController _diameterFinalController =
+      TextEditingController();
+  String? _selectedGroup;
+  double _result = 0;
+  String _errorMessage = '';
+  final FocusNode _rawFocusNode = FocusNode();
+  final FocusNode _finalFocusNode = FocusNode();
+
+  final double _groupButtonBorderWidth = 1.0;
+  final Color _groupButtonSelectedColor = const Color(0x666000AB);
+  final Color _groupButtonBorderColor = Color(0xFF6000AB);
+
+  final List<Map<String, dynamic>> _zincTable = [
+    {'range': 'D = 0,18', 'min': 0.18, 'max': 0.18, 'C': 10, 'Ж': 20, 'ОЖ': 30},
+    {
+      'range': '0,18 < D ≤ 0,24',
+      'min': 0.18,
+      'max': 0.24,
+      'C': 15,
+      'Ж': 20,
+      'ОЖ': 30,
+    },
+    {
+      'range': '0,24 < D ≤ 0,32',
+      'min': 0.24,
+      'max': 0.32,
+      'C': 20,
+      'Ж': 25,
+      'ОЖ': 45,
+    },
+    {
+      'range': '0,32 < D ≤ 0,38',
+      'min': 0.32,
+      'max': 0.38,
+      'C': 20,
+      'Ж': 25,
+      'ОЖ': 60,
+    },
+    {
+      'range': '0,38 < D ≤ 0,45',
+      'min': 0.38,
+      'max': 0.45,
+      'C': 30,
+      'Ж': 40,
+      'ОЖ': 75,
+    },
+    {
+      'range': '0,45 < D ≤ 0,55',
+      'min': 0.45,
+      'max': 0.55,
+      'C': 35,
+      'Ж': 40,
+      'ОЖ': 90,
+    },
+    {
+      'range': '0,55 < D ≤ 0,65',
+      'min': 0.55,
+      'max': 0.65,
+      'C': 40,
+      'Ж': 50,
+      'ОЖ': 110,
+    },
+    {
+      'range': '0,65 < D ≤ 0,75',
+      'min': 0.65,
+      'max': 0.75,
+      'C': 40,
+      'Ж': 60,
+      'ОЖ': 120,
+    },
+    {
+      'range': '0,75 < D ≤ 0,95',
+      'min': 0.75,
+      'max': 0.95,
+      'C': 50,
+      'Ж': 70,
+      'ОЖ': 130,
+    },
+    {
+      'range': '0,95 < D ≤ 1,15',
+      'min': 0.95,
+      'max': 1.15,
+      'C': 60,
+      'Ж': 80,
+      'ОЖ': 150,
+    },
+    {
+      'range': '1,15 < D ≤ 1,40',
+      'min': 1.15,
+      'max': 1.40,
+      'C': 60,
+      'Ж': 90,
+      'ОЖ': 165,
+    },
+    {
+      'range': '1,40 < D ≤ 1,80',
+      'min': 1.40,
+      'max': 1.80,
+      'C': 70,
+      'Ж': 100,
+      'ОЖ': 180,
+    },
+    {
+      'range': '1,80 < D ≤ 2,40',
+      'min': 1.80,
+      'max': 2.40,
+      'C': 80,
+      'Ж': 110,
+      'ОЖ': 205,
+    },
+    {
+      'range': '2,40 < D ≤ 3,00',
+      'min': 2.40,
+      'max': 3.00,
+      'C': 90,
+      'Ж': 125,
+      'ОЖ': 230,
+    },
+    {
+      'range': '3,00 < D ≤ 3,80',
+      'min': 3.00,
+      'max': 3.80,
+      'C': 100,
+      'Ж': 135,
+      'ОЖ': 230,
+    },
+    {
+      'range': '3,80 < D ≤ 4,40',
+      'min': 3.80,
+      'max': 4.40,
+      'C': 110,
+      'Ж': 150,
+      'ОЖ': 245,
+    },
+    {
+      'range': '4,40 < D ≤ 5,10',
+      'min': 4.40,
+      'max': 5.10,
+      'C': 110,
+      'Ж': 165,
+      'ОЖ': 245,
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _rawFocusNode.addListener(() => setState(() {}));
+    _finalFocusNode.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _diameterRawController.dispose();
+    _diameterFinalController.dispose();
+    _rawFocusNode.dispose();
+    _finalFocusNode.dispose();
+    super.dispose();
+  }
+
+  double _parseInput(String value) {
+    return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  }
+
+  double? _getZincValueForDiameter(double diameter, String group) {
+    for (var row in _zincTable) {
+      final min = row['min'] as double;
+      final max = row['max'] as double;
+
+      if (diameter >= min && diameter <= max) {
+        return row[group]?.toDouble();
+      }
+    }
+    return null;
+  }
+
+  void _calculate() {
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _errorMessage = '';
+      _result = 0;
+    });
+
+    if (_diameterRawController.text.isEmpty ||
+        _diameterFinalController.text.isEmpty) {
+      setState(() {
+        _errorMessage = 'Введите диаметры заготовки и готовой проволоки';
+      });
+      return;
+    }
+
+    if (_selectedGroup == null) {
+      setState(() {
+        _errorMessage = 'Выберите группу цинка (С, Ж или ОЖ)';
+      });
+      return;
+    }
+
+    final double dRaw = _parseInput(_diameterRawController.text);
+    final double dFinal = _parseInput(_diameterFinalController.text);
+
+    if (dFinal >= dRaw) {
+      setState(() {
+        _errorMessage =
+            'Диаметр готовой проволоки должен быть меньше диаметра заготовки';
+      });
+      return;
+    }
+
+    final double? pFinal = _getZincValueForDiameter(dFinal, _selectedGroup!);
+
+    if (pFinal == null) {
+      setState(() {
+        _errorMessage = 'Данной группы на заданном диаметре нет';
+      });
+      return;
+    }
+
+    final double k = _selectedGroup == 'ОЖ' ? 1.2 : 1.1;
+    setState(() {
+      _result = (dRaw / dFinal) * pFinal * k;
+    });
+  }
+
+  void _reset() {
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _diameterRawController.clear();
+      _diameterFinalController.clear();
+      _selectedGroup = null;
+      _result = 0;
+      _errorMessage = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final borderColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
+
+    final infoBackgroundColor =
+        isDarkMode
+            ? const Color(0xFF2D2D2D).withOpacity(0.8)
+            : const Color(0xFFF2EBF8);
+    final infoTextColor =
+        isDarkMode ? Colors.white.withOpacity(0.9) : Colors.black;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isMediumScreen = screenWidth >= 360 && screenWidth < 600;
+    final isLargeScreen = screenWidth >= 600;
+    final buttonWidth = screenWidth * (isSmallScreen ? 0.42 : 0.44);
+    final paddingValue = isSmallScreen ? 12.0 : 16.0;
+
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Расчёт цинка на заготовке')),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(paddingValue),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: _diameterRawController,
+                        focusNode: _rawFocusNode,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              _rawFocusNode.hasFocus ? '' : 'D Заготовки (мм)',
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          labelText: 'D Заготовки (мм)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: borderColor!,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6000AB),
+                              width: 2,
+                            ),
+                          ),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          floatingLabelStyle: const TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      SizedBox(height: paddingValue),
+                      TextField(
+                        controller: _diameterFinalController,
+                        focusNode: _finalFocusNode,
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              _finalFocusNode.hasFocus
+                                  ? ''
+                                  : 'D готовой проволоки (мм)',
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          labelText: 'D готовой проволоки (мм)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: borderColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6000AB),
+                              width: 2,
+                            ),
+                          ),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          floatingLabelStyle: const TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                        keyboardType: TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      SizedBox(height: paddingValue * 1.5),
+                      Text(
+                        'Группа цинка:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      SizedBox(height: paddingValue),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color:
+                                isDarkMode
+                                    ? const Color(0xFF6000AB)
+                                    : Colors.grey,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Material(
+                                color:
+                                    _selectedGroup == 'C'
+                                        ? _groupButtonSelectedColor
+                                        : Colors.transparent,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(7),
+                                  bottomLeft: Radius.circular(7),
+                                ),
+                                child: InkWell(
+                                  onTap:
+                                      () =>
+                                          setState(() => _selectedGroup = 'C'),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(7),
+                                    bottomLeft: Radius.circular(7),
+                                  ),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: isSmallScreen ? 8 : 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border:
+                                          _selectedGroup == 'C'
+                                              ? Border.all(
+                                                color: _groupButtonBorderColor,
+                                                width: _groupButtonBorderWidth,
+                                              )
+                                              : Border.all(
+                                                color: Colors.transparent,
+                                              ),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(7),
+                                        bottomLeft: Radius.circular(7),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'С',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              _selectedGroup == 'C'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                          color:
+                                              _selectedGroup == 'C'
+                                                  ? Colors.white
+                                                  : (isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                          fontSize: isSmallScreen ? 14 : 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color:
+                                  isDarkMode
+                                      ? const Color(0xFF6000AB)
+                                      : Colors.grey,
+                            ),
+                            Expanded(
+                              child: Material(
+                                color:
+                                    _selectedGroup == 'Ж'
+                                        ? _groupButtonSelectedColor
+                                        : Colors.transparent,
+                                child: InkWell(
+                                  onTap:
+                                      () =>
+                                          setState(() => _selectedGroup = 'Ж'),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: isSmallScreen ? 8 : 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border:
+                                          _selectedGroup == 'Ж'
+                                              ? Border.all(
+                                                color: _groupButtonBorderColor,
+                                                width: _groupButtonBorderWidth,
+                                              )
+                                              : Border.all(
+                                                color: Colors.transparent,
+                                              ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Ж',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              _selectedGroup == 'Ж'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                          color:
+                                              _selectedGroup == 'Ж'
+                                                  ? Colors.white
+                                                  : (isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                          fontSize: isSmallScreen ? 14 : 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color:
+                                  isDarkMode
+                                      ? const Color(0xFF6000AB)
+                                      : Colors.grey,
+                            ),
+                            Expanded(
+                              child: Material(
+                                color:
+                                    _selectedGroup == 'ОЖ'
+                                        ? _groupButtonSelectedColor
+                                        : Colors.transparent,
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(7),
+                                  bottomRight: Radius.circular(7),
+                                ),
+                                child: InkWell(
+                                  onTap:
+                                      () =>
+                                          setState(() => _selectedGroup = 'ОЖ'),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(7),
+                                    bottomRight: Radius.circular(7),
+                                  ),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: isSmallScreen ? 8 : 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border:
+                                          _selectedGroup == 'ОЖ'
+                                              ? Border.all(
+                                                color: _groupButtonBorderColor,
+                                                width: _groupButtonBorderWidth,
+                                              )
+                                              : Border.all(
+                                                color: Colors.transparent,
+                                              ),
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(7),
+                                        bottomRight: Radius.circular(7),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'ОЖ',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              _selectedGroup == 'ОЖ'
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                          color:
+                                              _selectedGroup == 'ОЖ'
+                                                  ? Colors.white
+                                                  : (isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                          fontSize: isSmallScreen ? 14 : 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: paddingValue * 2),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: isSmallScreen ? 40.0 : 60.0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              width: buttonWidth,
+                              height: 50,
+                              child: OutlinedButton(
+                                onPressed: _reset,
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color:
+                                        isDarkMode
+                                            ? Colors.white
+                                            : Colors.black,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  foregroundColor:
+                                      isDarkMode ? Colors.white : Colors.black,
+                                ),
+                                child: const Text('Сброс'),
+                              ),
+                            ),
+                            SizedBox(
+                              width: buttonWidth,
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: _calculate,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6000AB),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                  shadowColor: Colors.transparent,
+                                ),
+                                child: const Text(
+                                  'Рассчитать',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 2,
+                                        color: Colors.black26,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: paddingValue * 1.25),
+                      if (_errorMessage.isNotEmpty)
+                        Container(
+                          padding: EdgeInsets.all(paddingValue),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      if (_result > 0) ...[
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: paddingValue * 1.25,
+                            left: 8,
+                            right: 8,
+                          ),
+                          child: const Text(
+                            'Результат',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          margin: EdgeInsets.only(top: paddingValue * 0.5),
+                          padding: EdgeInsets.all(paddingValue),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6000AB),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Количество цинка на заготовке должно быть не менее ${_result.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.fromLTRB(
+                paddingValue,
+                paddingValue,
+                paddingValue,
+                paddingValue,
+              ),
+              padding: EdgeInsets.all(paddingValue * 0.75),
+              decoration: BoxDecoration(
+                color: infoBackgroundColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
+                'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 11 : 12,
+                  fontStyle: FontStyle.italic,
+                  color: infoTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+ // Test-only access to the unchanged private state above. No formulas here.
+Map<String, Object> referenceLinear(State state) {
+  final s = state as _LinearRouteScreenState;
+  return {
+    'numbers': [s._totalReduction, s._unitReduction, s._vsrRaw1, s._vsrRaw2, s._vsrFinal1, s._vsrFinal2],
+    'diameters': s._diameterControllers.map((c) => c.text).toList(),
+    'reductions': List<double>.of(s._reductions),
+  };
+}
+List<double> referenceRoute(State state) =>
+    List<double>.of((state as _RouteCalculationScreenState)._reductions);
+Map<String, Object> referenceZinc(State state) {
+  final s = state as _ZincCalculationScreenState;
+  return {'value': s._result, 'error': s._errorMessage};
+}
+

@@ -2,7 +2,7 @@ name: wire_drawing_calc
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 3.0.0+11
+version: 3.1.0+12
 
 environment:
   sdk: '>=3.7.2 <4.0.0'
@@ -22,7 +22,12 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  image_path: "assets/icon/iconn.jpg"
+  image_path: "assets/icon/liquid_glass/launcher.png"
+  adaptive_icon_background: "assets/icon/liquid_glass/background.png"
+  adaptive_icon_foreground: "assets/icon/liquid_glass/foreground.png"
+  adaptive_icon_monochrome: "assets/icon/liquid_glass/monochrome.png"
+  # The SVG layers already include the Android safe area.
+  adaptive_icon_foreground_inset: 0
   min_sdk_android: 21
 
 flutter:

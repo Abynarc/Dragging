@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="336" height="336" viewBox="0 0 336 336">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#162138" />
+      <stop offset="1" stop-color="#30234c" />
+    </linearGradient>
+    <linearGradient id="glass" x2="0.8" y2="1">
+      <stop stop-color="#eefbff" stop-opacity=".96" />
+      <stop offset=".45" stop-color="#a9baff" stop-opacity=".65" />
+      <stop offset="1" stop-color="#8561d6" stop-opacity=".9" />
+    </linearGradient>
+  </defs>
+  <rect width="336" height="336" rx="76" fill="url(#bg)" />
+  <g id="spool">
+    <ellipse cx="168" cy="272" rx="105" ry="22" fill="#070d20" opacity=".28" id="shadow" />
+    <ellipse cx="168" cy="239" rx="100" ry="37" fill="url(#glass)" stroke="#d5dbff" stroke-width="2" />
+    <path d="M88 108 L88 228 Q168 280 248 228 L248 108Z" fill="url(#glass)" stroke="#d5dcff" stroke-width="2" />
+    <g fill="none" stroke="#eff5ff" stroke-width="7" stroke-linecap="round" opacity=".85">
+      <path d="M91 147 Q168 191 245 147" />
+      <path d="M91 174 Q168 218 245 174" />
+      <path d="M91 201 Q168 245 245 201" />
+    </g>
+    <ellipse cx="168" cy="107" rx="101" ry="43" fill="url(#glass)" stroke="#f0f4ff" stroke-width="3" />
+    <ellipse cx="168" cy="105" rx="29" ry="12" fill="#292948" stroke="#b9c4ef" stroke-width="2" />
+  </g>
+</svg>
