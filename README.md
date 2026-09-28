@@ -40,4 +40,3 @@ Dragging помогает рассчитать путь от заготовки 
   </tr>
 </table>
 
-<p align="center">by DK and IB</p>
