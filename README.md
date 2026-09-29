@@ -22,21 +22,23 @@ Dragging помогает рассчитать путь от заготовки 
 
 ## Скриншоты
 
+Версия 3.1.1.
+
 <table>
   <tr><th>Светлая тема</th><th>Тёмная тема</th></tr>
   <tr>
-    <td align="center"><a href="screenshots/home-light.png"><img src="screenshots/home-light.png" width="280" alt="Главный экран в светлой теме"></a></td>
-    <td align="center"><a href="screenshots/home-dark.png"><img src="screenshots/home-dark.png" width="280" alt="Главный экран в тёмной теме"></a></td>
+    <td align="center"><a href="screenshots/home-light.png?v=3.1.1"><img src="screenshots/home-light.png?v=3.1.1" width="280" alt="Главный экран в светлой теме"></a></td>
+    <td align="center"><a href="screenshots/home-dark.png?v=3.1.1"><img src="screenshots/home-dark.png?v=3.1.1" width="280" alt="Главный экран в тёмной теме"></a></td>
   </tr>
   <tr><th colspan="2">Линейный маршрут — ввод и результаты</th></tr>
   <tr>
-    <td align="center"><a href="screenshots/linear-light.png"><img src="screenshots/linear-light.png" width="280" alt="Линейный маршрут: светлая тема, результаты расчёта"></a></td>
-    <td align="center"><a href="screenshots/linear-dark.png"><img src="screenshots/linear-dark.png" width="280" alt="Линейный маршрут: тёмная тема, результаты расчёта"></a></td>
+    <td align="center"><a href="screenshots/linear-light.png?v=3.1.1"><img src="screenshots/linear-light.png?v=3.1.1" width="280" alt="Линейный маршрут: светлая тема, результаты расчёта"></a></td>
+    <td align="center"><a href="screenshots/linear-dark.png?v=3.1.1"><img src="screenshots/linear-dark.png?v=3.1.1" width="280" alt="Линейный маршрут: тёмная тема, результаты расчёта"></a></td>
   </tr>
   <tr><th>Расчёт цинка</th><th>Справочная таблица</th></tr>
   <tr>
-    <td align="center"><a href="screenshots/zinc-light.png"><img src="screenshots/zinc-light.png" width="280" alt="Расчёт цинка для группы Ж"></a></td>
-    <td align="center"><a href="screenshots/reference-dark.png"><img src="screenshots/reference-dark.png" width="280" alt="Таблица плотности цинка в тёмной теме"></a></td>
+    <td align="center"><a href="screenshots/zinc-light.png?v=3.1.1"><img src="screenshots/zinc-light.png?v=3.1.1" width="280" alt="Расчёт цинка для группы Ж"></a></td>
+    <td align="center"><a href="screenshots/reference-dark.png?v=3.1.1"><img src="screenshots/reference-dark.png?v=3.1.1" width="280" alt="Таблица плотности цинка в тёмной теме"></a></td>
   </tr>
 </table>
 
