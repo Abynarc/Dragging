@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'precision_theme.dart';
 
-/// Only this shell creates backdrop filters: one header and one navigation
-/// region. Rows and numeric surfaces cannot independently opt into blur.
+/// Only this shell creates backdrop filters for navigation controls.
+/// Rows and numeric surfaces cannot independently opt into blur.
 class PrecisionScaffold extends StatelessWidget {
   const PrecisionScaffold({
     super.key,
@@ -28,6 +28,11 @@ class PrecisionScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = PrecisionPalette.of(context);
+    final safePadding = MediaQuery.paddingOf(context);
+    final horizontalInset =
+        safePadding.left > safePadding.right
+            ? safePadding.left
+            : safePadding.right;
     final effects =
         blur &&
         !MediaQuery.of(context).disableAnimations &&
@@ -56,63 +61,85 @@ class PrecisionScaffold extends StatelessWidget {
                     : null,
           ),
           child: SafeArea(
+            minimum: EdgeInsets.symmetric(horizontal: horizontalInset),
             child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                  child: _NavigationSurface(
-                    blur: effects,
-                    child: Row(
-                      children: [
-                        if (onBack != null)
-                          Semantics(
-                            label: 'Назад',
-                            button: true,
-                            onTap: onBack,
-                            child: ExcludeSemantics(
-                              child: BackButton(onPressed: onBack),
-                            ),
+                  child: Row(
+                    children: [
+                      // Equal side slots keep the title at the screen center.
+                      SizedBox(
+                        width: onToggleTransparency == null ? 48 : 96,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child:
+                              onBack == null
+                                  ? null
+                                  : _NavigationSurface(
+                                    blur: effects,
+                                    child: Semantics(
+                                      label: 'Назад',
+                                      button: true,
+                                      onTap: onBack,
+                                      child: ExcludeSemantics(
+                                        child: BackButton(onPressed: onBack),
+                                      ),
+                                    ),
+                                  ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 12,
                           ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              title,
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
+                          child: Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.titleSmall,
                           ),
                         ),
-                        PrecisionControlSemantics(
-                          label: 'Переключить тему',
-                          child: IconButton(
-                            onPressed: onToggleTheme,
-                            tooltip: 'Переключить тему',
-                            icon: Icon(
-                              p.dark
-                                  ? Icons.light_mode_outlined
-                                  : Icons.dark_mode_outlined,
+                      ),
+                      _NavigationSurface(
+                        blur: effects,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PrecisionControlSemantics(
+                              label: 'Переключить тему',
+                              child: IconButton(
+                                onPressed: onToggleTheme,
+                                tooltip: 'Переключить тему',
+                                icon: Icon(
+                                  p.dark
+                                      ? Icons.light_mode_outlined
+                                      : Icons.dark_mode_outlined,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (onToggleTransparency != null)
+                              PrecisionControlSemantics(
+                                label: 'Без прозрачности',
+                                child: IconButton(
+                                  onPressed:
+                                      MediaQuery.of(context).highContrast ||
+                                              MediaQuery.of(
+                                                context,
+                                              ).disableAnimations
+                                          ? null
+                                          : onToggleTransparency,
+                                  isSelected: !effects,
+                                  tooltip: 'Без прозрачности',
+                                  icon: const Icon(Icons.blur_on),
+                                  selectedIcon: const Icon(Icons.blur_off),
+                                ),
+                              ),
+                          ],
                         ),
-                        if (onToggleTransparency != null)
-                          PrecisionControlSemantics(
-                            label: 'Без прозрачности',
-                            child: IconButton(
-                              onPressed:
-                                  MediaQuery.of(context).highContrast ||
-                                          MediaQuery.of(
-                                            context,
-                                          ).disableAnimations
-                                      ? null
-                                      : onToggleTransparency,
-                              isSelected: !effects,
-                              tooltip: 'Без прозрачности',
-                              icon: const Icon(Icons.blur_on),
-                              selectedIcon: const Icon(Icons.blur_off),
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(child: body),

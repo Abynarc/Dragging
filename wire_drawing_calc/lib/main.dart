@@ -109,8 +109,12 @@ class _Content extends StatelessWidget {
 }
 
 class _Fields extends StatelessWidget {
-  const _Fields({required this.children});
+  const _Fields({
+    required this.children,
+    this.crossAxisAlignment = WrapCrossAlignment.start,
+  });
   final List<Widget> children;
+  final WrapCrossAlignment crossAxisAlignment;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -120,6 +124,7 @@ class _Fields extends StatelessWidget {
       return Wrap(
         spacing: 12,
         runSpacing: 18,
+        crossAxisAlignment: crossAxisAlignment,
         children: [
           for (final child in children) SizedBox(width: width, child: child),
         ],
@@ -155,6 +160,7 @@ class HomeScreen extends StatelessWidget {
         ),
         const Text(
           'Выберите режим расчёта',
+          textAlign: TextAlign.center,
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
         ),
         _gap,
@@ -676,6 +682,7 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Fields(
+                crossAxisAlignment: WrapCrossAlignment.end,
                 children: [
                   PrecisionNumberField(
                     controller: _diameterRawController,
@@ -746,7 +753,7 @@ class _ZincCalculationScreenState extends State<ZincCalculationScreen> {
           ),
         _gap,
         Text(
-          'Поверхностная плотность цинка соответствовует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
+          'Поверхностная плотность цинка соответствует нормам, указанным в табл. 7 ГОСТ 7372-79.\n'
           'К - поправочный коэффициент, который принимает значения 1,1 для групп "С" и "Ж", а для группы "ОЖ" - 1,2-1,3',
           style: TextStyle(color: PrecisionPalette.of(context).muted),
         ),

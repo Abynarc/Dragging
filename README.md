@@ -6,7 +6,7 @@
 <p align="center"><strong>Маршрут волочения</strong><br>Калькулятор диаметров, обжатий и цинкового покрытия для Android.</p>
 
 <p align="center">
-  <a href="https://github.com/Abynarc/Dragging/releases/tag/v3.1.0"><strong>Скачать приложение →</strong></a>
+  <a href="https://github.com/Abynarc/Dragging/releases/tag/v3.1.1"><strong>Скачать приложение →</strong></a>
 </p>
 
 ## О приложении
