@@ -150,80 +150,215 @@ class HomeScreen extends StatelessWidget {
     toggleTheme: toggleDarkMode,
     body: _Content(
       children: [
-        ExcludeSemantics(
-          child: SizedBox(
-            height: 84,
-            child: CustomPaint(
-              painter: _WireArt(PrecisionPalette.of(context).accent),
-            ),
-          ),
+        _intro(context),
+        const SizedBox(height: 24),
+        _menu(
+          context,
+          'Расчёт маршрута',
+          'Диаметры и обжатие по проходам',
+          Icons.route_outlined,
+          const Color(0xff7652bd),
+          const RouteCalculationScreen(),
         ),
-        const Text(
-          'Выберите режим расчёта',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
-        ),
-        _gap,
-        _menu(context, 'Расчёт маршрута', '01', const RouteCalculationScreen()),
-        _gap,
+        const SizedBox(height: 12),
         _menu(
           context,
           'Расчёт линейного маршрута',
-          '02',
+          'Распределение обжатия по блокам',
+          Icons.timeline_rounded,
+          const Color(0xff337e91),
           const LinearRouteScreen(),
         ),
-        _gap,
+        const SizedBox(height: 12),
         _menu(
           context,
           'Расчёт цинка на заготовке',
-          '03',
+          'Масса и плотность покрытия',
+          Icons.layers_outlined,
+          const Color(0xffa57135),
           const ZincCalculationScreen(),
         ),
-        _gap,
-        _menu(context, 'Справка и формулы', '04', const ReferenceScreen()),
+        const SizedBox(height: 12),
+        _menu(
+          context,
+          'Справка и формулы',
+          'Формулы расчётов и таблица цинка',
+          Icons.menu_book_rounded,
+          const Color(0xff60719d),
+          const ReferenceScreen(),
+        ),
         const SizedBox(height: 28),
         Text(
           'by DK and IB',
           textAlign: TextAlign.center,
-          style: TextStyle(color: PrecisionPalette.of(context).muted),
+          style: TextStyle(
+            color: PrecisionPalette.of(context).muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            letterSpacing: .5,
+          ),
         ),
       ],
     ),
   );
+  Widget _intro(BuildContext context) {
+    final p = PrecisionPalette.of(context);
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors:
+              p.dark
+                  ? const [Color(0xff514071), Color(0xff30243f)]
+                  : const [Color(0xff7957bb), Color(0xff493176)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -35,
+            top: 8,
+            child: ExcludeSemantics(
+              child: CustomPaint(
+                size: const Size(190, 155),
+                painter: _WireArt(Colors.white.withValues(alpha: .2)),
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Выберите\nрежим расчёта',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w600,
+                    height: 1.12,
+                    letterSpacing: -.6,
+                  ),
+                ),
+                SizedBox(height: 14),
+                Text(
+                  'От заготовки до готовой проволоки',
+                  style: TextStyle(
+                    color: Color(0xffede5fa),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _menu(
     BuildContext context,
     String title,
-    String number,
+    String description,
+    IconData icon,
+    Color tint,
     Widget screen,
   ) {
     final p = PrecisionPalette.of(context);
-    return ElevatedButton(
-      onPressed:
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => screen),
-          ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: p.surface,
-        foregroundColor: p.ink,
-        elevation: 0,
-        minimumSize: const Size(48, 80),
-        padding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: p.line),
-        ),
-      ),
-      child: Row(
-        children: [
-          ExcludeSemantics(
-            child: Text(number, style: TextStyle(color: p.accent)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: Text(title)),
-          const SizedBox(width: 8),
-          Icon(Icons.chevron_right, color: p.accent),
+    final accent = p.dark ? Color.lerp(tint, Colors.white, .45)! : tint;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          if (!p.dark)
+            BoxShadow(
+              color: p.ink.withValues(alpha: .04),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
         ],
+      ),
+      child: ElevatedButton(
+        onPressed:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => screen),
+            ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: p.surface,
+          foregroundColor: p.ink,
+          elevation: 0,
+          minimumSize: const Size(48, 104),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          alignment: Alignment.centerLeft,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: p.line.withValues(alpha: .25)),
+          ),
+        ),
+        child: Row(
+          children: [
+            ExcludeSemantics(
+              child: Container(
+                width: 48,
+                height: 52,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      accent.withValues(alpha: p.dark ? .22 : .13),
+                      accent.withValues(alpha: p.dark ? .1 : .05),
+                    ],
+                  ),
+                ),
+                child: Icon(icon, color: accent, size: 26),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                      letterSpacing: -.3,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: p.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ExcludeSemantics(
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: p.muted,
+                size: 20,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -238,12 +373,12 @@ class _WireArt extends CustomPainter {
         Paint()
           ..color = color
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1;
-    canvas.translate(size.width / 2, 30);
-    canvas.rotate(-.25);
-    for (var i = 0; i < 5; i++) {
+          ..strokeWidth = 1.3;
+    canvas.translate(size.width / 2, size.height / 2 - 12);
+    canvas.rotate(-.45);
+    for (var i = 0; i < 7; i++) {
       canvas.drawOval(
-        Rect.fromCenter(center: Offset(0, i * 7), width: 190, height: 42),
+        Rect.fromCenter(center: Offset(0, i * 8), width: 180, height: 62),
         paint,
       );
     }
